@@ -1,0 +1,46 @@
+<project name="ds.pa1" default="build" basedir=".">
+	<description>
+	Build file for Distributed Systems Assignment 1
+    </description>
+
+	<property name="build.sysclasspath" value="ignore" />
+
+	<target name="build" depends="clean, compile" description="build everything" />
+
+	<target name="compile" description="compile the source ">
+		<mkdir dir="build" />
+		<mkdir dir="dist" />
+
+		<!-- copy jars in external directory to lib -->
+		<copy todir="dist">
+			<fileset dir="external" includes="*.jar" />
+		</copy>
+
+ 		<path id="default.classpath">
+	    	<fileset dir="dist">
+	        	<include name="*.jar" />
+	        </fileset>
+ 		</path>
+
+        <!-- Compile the java code from ${src} into ${tmp} -->
+	    <javac srcdir="src"
+			destdir="build"
+            includeantruntime="false"
+            debug="on"
+            classpathref="default.classpath">
+        </javac>
+
+		<!-- Put all class files into the jar file -->
+		<jar destfile="dist/dspa1.jar" basedir="build"> 
+			<manifest>
+				<attribute name="Main-Class" value="ds.pa1.ClientServer"/>
+			</manifest>
+		</jar>
+	</target>
+
+	<target name="clean" description="clean up">
+		<delete dir="build" />
+		<delete dir="dist" />
+	</target>
+
+</project>
