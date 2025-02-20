@@ -1,19 +1,24 @@
 package ds.pa1;
 
+import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
 import java.util.HashMap;
+import java.util.Objects;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Code for the client side. This will run n-1 times, on ranks 1 .. n (where n
- * is the number of nodes passed to srun 
+ * is the number of nodes passed to srun
  * 
  * TODO: You have to modify and extend this file.
  */
 public class Client {
-	static final int ARRAY_SIZE = 1024 * 1024; // size of double arrays for the optional bonus assignment 
-	static final int HASH_MAP_SIZE = 100000;   // size of the HashMaps sent to the server for the optional bonus assignment 
+	static final int ARRAY_SIZE = 1024 * 1024; // size of double arrays for the optional bonus assignment
+	static final int HASH_MAP_SIZE = 100000; // size of the HashMaps sent to the server for the optional bonus
+												// assignment
 
 	static final Logger logger = LoggerFactory.getLogger(Client.class);
 
@@ -54,8 +59,14 @@ public class Client {
 		System.err.println("client connecting to " + host);
 
 		// TODO implement
+		Registry registry = LocateRegistry.getRegistry(host);
+		try {
+			ServerInterface clientStub = (ServerInterface) registry.lookup("NumServer");
+			return clientStub;
+		} catch (RemoteException re) {
+			return null;
+		}
 
-		return null;
 	}
 
 	public void start() {
@@ -63,12 +74,15 @@ public class Client {
 				+ Util.getCoordinatorHostname());
 
 		ServerInterface serverInterface = connect();
+		if (Objects.isNull(serverInterface)) {
+			System.exit(1);
+		}
 
 		// Warmup
 		for (int i = 0; i < 100; i++) {
 			serverInterface.getSequenceNumber();
 		}
-
+		serverInterface.barrier();
 		long start = System.nanoTime();
 		for (int i = 0; i < ClientServer.getNrSequenceNumberCalls(); i++) {
 			serverInterface.getSequenceNumber();

@@ -4,7 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The implementation of the remote object (on the server side). 
+ * The implementation of the remote object (on the server side).
  * TODO: YOU HAVE TO MODIFY AND EXTEND THIS FILE
  */
 public class ServerImplementation implements ServerInterface {
@@ -50,7 +50,8 @@ public class ServerImplementation implements ServerInterface {
 	 * 
 	 */
 	@Override
-	public void barrier() {
+	public void barrier(String HostName) {
+
 		// TODO implement!
 	}
 
