@@ -1,5 +1,9 @@
 package ds.pa1;
 
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,6 +17,8 @@ public class ServerImplementation implements ServerInterface {
 	private int sequenceNumber = 0;
 	private long aggregatedTimeSequenceNumbers = 0;
 
+	private final AtomicInteger numClientsInBarrier = new AtomicInteger(0);
+
 	public ServerImplementation() {
 	}
 
@@ -23,7 +29,10 @@ public class ServerImplementation implements ServerInterface {
 	 * @return the sequence number
 	 */
 	@Override
-	public int getSequenceNumber() {
+	public synchronized int getSequenceNumber() {
+		// synchronized means that only one thread will be able to run it but is this
+		// what we want? this limits throughput
+		/* THANOS: this might run concurently. Need to make threadsafe */
 		sequenceNumber++;
 		return sequenceNumber;
 	}
@@ -38,7 +47,8 @@ public class ServerImplementation implements ServerInterface {
 	 *                             getSequenceNumber calls.
 	 */
 	@Override
-	public void setDone(long nanosSequenceNumners) {
+	public synchronized void setDone(long nanosSequenceNumners) {
+		// THANOS: this might run concurently. Need to make threadsafe
 		aggregatedTimeSequenceNumbers += nanosSequenceNumners;
 	}
 
@@ -50,8 +60,22 @@ public class ServerImplementation implements ServerInterface {
 	 * 
 	 */
 	@Override
-	public void barrier(String HostName) {
-
+	public void barrier() {
+		// synchronized is not needed because here we use atomic ints
+		// the barrier
+		// THANOS: this might run concurently. Need to make threadsafe
+		int currentClientsInBarrier = numClientsInBarrier.incrementAndGet();
+		System.out.println("Counters in barrier increased to:" + currentClientsInBarrier);
+		int numClients = Util.getNrClients();
+		while (currentClientsInBarrier < numClients) {
+			try {
+				Thread.sleep(1);
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+			}
+		}
+		System.out.println("DOORS OPEN");
+		return;
 		// TODO implement!
 	}
 
