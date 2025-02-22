@@ -35,7 +35,7 @@ public class Server {
 			// Registry reg = LocateRegistry.getRegistry();
 			reg.bind("NumServer", serverStub);
 			logger.info("The server should now be visible on the registry...");
-			while (serverImpl.getClientsDone() < 3) {
+			while (serverImpl.getClientsDone() < Util.getNrClients()) {
 				Thread.sleep(5000);//
 			}
 

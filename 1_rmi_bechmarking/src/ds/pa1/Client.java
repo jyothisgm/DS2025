@@ -57,21 +57,29 @@ public class Client {
 
 	private ServerInterface connect() throws RemoteException, NotBoundException {
 		String host = Util.getCoordinatorHostname();
-		System.err.println("client connecting to " + host);
+		logger.info("client connecting to " + host);
 
 		Registry registry = LocateRegistry.getRegistry(host);
+		logger.info("client connected to " + host);
 		ServerInterface clientStub = (ServerInterface) registry.lookup("NumServer");
+		logger.info("client got server stub to " + host);
 		return clientStub;
 
 	}
 
-	public void start() throws RemoteException, NotBoundException {
+	public void start() throws RemoteException, NotBoundException, InterruptedException {
 		logger.info("Client started on host " + Util.getMyHostname() + " master = "
 				+ Util.getCoordinatorHostname());
 
 		ServerInterface serverInterface = null;
 		while (Objects.isNull(serverInterface)) {
-			serverInterface = connect();
+			try {
+				serverInterface = connect();
+			} catch (RemoteException e) {
+				logger.warn(e.getMessage(), e);
+			}
+
+			Thread.sleep(1000);
 		}
 
 		// Warmup
@@ -96,7 +104,7 @@ public class Client {
 	public static void main(String[] args) {
 		try {
 			new Client().start();
-		} catch (RemoteException | NotBoundException e) {
+		} catch (RemoteException | NotBoundException | InterruptedException e) {
 			e.printStackTrace();
 		}
 	}
