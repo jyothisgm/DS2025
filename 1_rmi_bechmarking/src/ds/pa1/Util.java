@@ -81,11 +81,13 @@ public final class Util {
 
 	/**
 	 * 
-	 * @return The total number of client machines participating in this run, excluding the
+	 * @return The total number of client machines participating in this run,
+	 *         excluding the
 	 *         coordinator (i.e., the total number of machines -1).
 	 */
 	public static int getNrClients() {
-		return nodeList.size()-1;
+		// return 3; // LOCAL TESTING
+		return nodeList.size() - 1;
 	}
 
 	/**

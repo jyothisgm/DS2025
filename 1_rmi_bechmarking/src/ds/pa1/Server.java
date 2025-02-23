@@ -30,22 +30,30 @@ public class Server {
 
 			// TODO Implement your code there that creates a remote object, and exposes it
 			// to the world
-			ServerInterface serverStub = (ServerInterface) UnicastRemoteObject.exportObject(serverImpl, 42);
-
-			Registry reg = LocateRegistry.getRegistry();
+			ServerInterface serverStub = (ServerInterface) UnicastRemoteObject.exportObject(serverImpl, 1099);
+			Registry reg = LocateRegistry.createRegistry(1099);
+			// Registry reg = LocateRegistry.getRegistry();
 			reg.bind("NumServer", serverStub);
-			System.err.println("The server should now be visible on the registry...");
+			logger.info("The server should now be visible on the registry...");
+			while (serverImpl.getClientsDone() < Util.getNrClients()) {
+				Thread.sleep(5000);//
+			}
 
 			double aggregatedTime = serverImpl.getAggregatedTimeSequenceNumbers() / 1000.0;
 			long totalCalls = Util.getNrClients() * ClientServer.getNrSequenceNumberCalls();
 			double microsPerCall = aggregatedTime / totalCalls;
+			// double microsPerCall = aggregatedTime / 100000; // LOCAL TESTING
 			System.out.printf("Time per getSequenceNumber call with %s and %d calls = %.3f microseconds\n",
 					nrClientsString(), totalCalls, microsPerCall);
+			logger.info(String.format("Time per getSequenceNumber call with %s and %d calls = %.3f microseconds\n",
+					nrClientsString(), totalCalls, microsPerCall));
 
 			System.exit(0);
 		} catch (Exception e) {
 			System.err.println("Eception Occurred in the server: " + e.getMessage());
 			e.printStackTrace();
+
+			logger.error("Exception Occurred in the server: " + e.getMessage(), e);
 		}
 	}
 

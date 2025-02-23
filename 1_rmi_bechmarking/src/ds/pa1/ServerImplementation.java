@@ -1,7 +1,5 @@
 package ds.pa1;
 
-import java.rmi.registry.LocateRegistry;
-import java.rmi.registry.Registry;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
@@ -16,6 +14,11 @@ public class ServerImplementation implements ServerInterface {
 
 	private int sequenceNumber = 0;
 	private long aggregatedTimeSequenceNumbers = 0;
+	private int clientsDone = 0;
+
+	public int getClientsDone() {
+		return clientsDone;
+	}
 
 	private final AtomicInteger numClientsInBarrier = new AtomicInteger(0);
 
@@ -50,6 +53,8 @@ public class ServerImplementation implements ServerInterface {
 	public synchronized void setDone(long nanosSequenceNumners) {
 		// THANOS: this might run concurently. Need to make threadsafe
 		aggregatedTimeSequenceNumbers += nanosSequenceNumners;
+		this.clientsDone += 1;
+
 	}
 
 	/**
@@ -63,20 +68,25 @@ public class ServerImplementation implements ServerInterface {
 	public void barrier() {
 		// synchronized is not needed because here we use atomic ints
 		// the barrier
-		// THANOS: this might run concurently. Need to make threadsafe
+		// TODO: this might run concurently. Need to make threadsafe
 		int currentClientsInBarrier = numClientsInBarrier.incrementAndGet();
-		System.out.println("Counters in barrier increased to:" + currentClientsInBarrier);
+		logger.info("Clients in barrier increased to:" + currentClientsInBarrier);
 		int numClients = Util.getNrClients();
+		int ClientsInBarrier = numClientsInBarrier.get();
 		while (currentClientsInBarrier < numClients) {
 			try {
+				currentClientsInBarrier = numClientsInBarrier.get();
+				if (ClientsInBarrier < currentClientsInBarrier) {
+					ClientsInBarrier = currentClientsInBarrier;
+					logger.debug(currentClientsInBarrier + " clients waiting");
+				}
 				Thread.sleep(1);
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
 			}
 		}
-		System.out.println("DOORS OPEN");
+		logger.info("DOORS OPEN");
 		return;
-		// TODO implement!
 	}
 
 	// The methods below are only called by the server, and never by a client

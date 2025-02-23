@@ -1,5 +1,6 @@
 package ds.pa1;
 
+import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -54,47 +55,60 @@ public class Client {
 		return size;
 	}
 
-	private ServerInterface connect() {
+	private ServerInterface connect() throws RemoteException, NotBoundException {
 		String host = Util.getCoordinatorHostname();
 		System.err.println("client connecting to " + host);
+		logger.info("Client connecting to " + host + " : Client on host " + Util.getMyHostname());
 
-		// TODO implement
 		Registry registry = LocateRegistry.getRegistry(host);
-		try {
-			ServerInterface clientStub = (ServerInterface) registry.lookup("NumServer");
-			return clientStub;
-		} catch (RemoteException re) {
-			return null;
-		}
+		logger.debug("Client connected to " + host + " : Client on host " + Util.getMyHostname());
+		ServerInterface clientStub = (ServerInterface) registry.lookup("NumServer");
+		logger.debug("Server stub recieved for " + host + " : Client on host " + Util.getMyHostname());
+		return clientStub;
 
 	}
 
-	public void start() {
+	public void start() throws RemoteException, NotBoundException, InterruptedException {
 		logger.info("Client started on host " + Util.getMyHostname() + " master = "
 				+ Util.getCoordinatorHostname());
 
-		ServerInterface serverInterface = connect();
-		if (Objects.isNull(serverInterface)) {
-			System.exit(1);
+		ServerInterface serverInterface = null;
+		while (Objects.isNull(serverInterface)) {
+			try {
+				serverInterface = connect();
+			} catch (RemoteException e) {
+				logger.warn(e.getMessage(), e);
+				Thread.sleep(100);
+			}
 		}
 
 		// Warmup
 		for (int i = 0; i < 100; i++) {
 			serverInterface.getSequenceNumber();
 		}
+		logger.info("Warmup Done: Client on host " + Util.getMyHostname());
 		serverInterface.barrier();
 		long start = System.nanoTime();
+
+		logger.info("Barrier open at " + start + ": Client on host " + Util.getMyHostname());
 		for (int i = 0; i < ClientServer.getNrSequenceNumberCalls(); i++) {
+			// for (int i = 0; i < 100000; i++) { // LOCAL TESTING
 			serverInterface.getSequenceNumber();
 		}
 		long end = System.nanoTime();
 
-		serverInterface.setDone(end - start);
+		logger.info("Last Sequence Number " + serverInterface.getSequenceNumber() + " recieved at " + end +
+			": Client on host " + Util.getMyHostname());
 
-		logger.info("Client " + Util.getMyHostname() + " done");
+		serverInterface.setDone(end - start);
+		logger.info("Client " + Util.getMyHostname() + " done in " + (end - start) + " nanosecond(s)");
 	}
 
 	public static void main(String[] args) {
-		new Client().start();
+		try {
+			new Client().start();
+		} catch (RemoteException | NotBoundException | InterruptedException e) {
+			logger.error("Client " + Util.getMyHostname() + " : " + e.getMessage(), e);
+		}
 	}
 }
