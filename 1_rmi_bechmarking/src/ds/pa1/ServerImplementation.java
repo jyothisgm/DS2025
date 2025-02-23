@@ -70,7 +70,7 @@ public class ServerImplementation implements ServerInterface {
 		// the barrier
 		// TODO: this might run concurently. Need to make threadsafe
 		int currentClientsInBarrier = numClientsInBarrier.incrementAndGet();
-		System.out.println("SERVER IMPL: Clients in barrier increased to:" + currentClientsInBarrier);
+		logger.info("Clients in barrier increased to:" + currentClientsInBarrier);
 		int numClients = Util.getNrClients();
 		int ClientsInBarrier = numClientsInBarrier.get();
 		while (currentClientsInBarrier < numClients) {
@@ -78,14 +78,14 @@ public class ServerImplementation implements ServerInterface {
 				currentClientsInBarrier = numClientsInBarrier.get();
 				if (ClientsInBarrier < currentClientsInBarrier) {
 					ClientsInBarrier = currentClientsInBarrier;
-					System.out.println("SERVER IMPL:" + currentClientsInBarrier + " clients waiting");
+					logger.debug(currentClientsInBarrier + " clients waiting");
 				}
 				Thread.sleep(1);
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
 			}
 		}
-		System.out.println("DOORS OPEN");
+		logger.info("DOORS OPEN");
 		return;
 	}
 

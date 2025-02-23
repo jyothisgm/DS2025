@@ -45,11 +45,15 @@ public class Server {
 			// double microsPerCall = aggregatedTime / 100000; // LOCAL TESTING
 			System.out.printf("Time per getSequenceNumber call with %s and %d calls = %.3f microseconds\n",
 					nrClientsString(), totalCalls, microsPerCall);
+			logger.info(String.format("Time per getSequenceNumber call with %s and %d calls = %.3f microseconds\n",
+					nrClientsString(), totalCalls, microsPerCall));
 
 			System.exit(0);
 		} catch (Exception e) {
 			System.err.println("Eception Occurred in the server: " + e.getMessage());
 			e.printStackTrace();
+
+			logger.error("Exception Occurred in the server: " + e.getMessage(), e);
 		}
 	}
 

@@ -57,12 +57,13 @@ public class Client {
 
 	private ServerInterface connect() throws RemoteException, NotBoundException {
 		String host = Util.getCoordinatorHostname();
-		logger.info("client connecting to " + host);
+		System.err.println("client connecting to " + host);
+		logger.info("Client connecting to " + host + " : Client on host " + Util.getMyHostname());
 
 		Registry registry = LocateRegistry.getRegistry(host);
-		logger.info("client connected to " + host);
+		logger.debug("Client connected to " + host + " : Client on host " + Util.getMyHostname());
 		ServerInterface clientStub = (ServerInterface) registry.lookup("NumServer");
-		logger.info("client got server stub to " + host);
+		logger.debug("Server stub recieved for " + host + " : Client on host " + Util.getMyHostname());
 		return clientStub;
 
 	}
@@ -77,35 +78,37 @@ public class Client {
 				serverInterface = connect();
 			} catch (RemoteException e) {
 				logger.warn(e.getMessage(), e);
+				Thread.sleep(100);
 			}
-
-			Thread.sleep(1000);
 		}
 
 		// Warmup
 		for (int i = 0; i < 100; i++) {
 			serverInterface.getSequenceNumber();
 		}
-		System.out.println("Warmup done");
+		logger.info("Warmup Done: Client on host " + Util.getMyHostname());
 		serverInterface.barrier();
 		long start = System.nanoTime();
+
+		logger.info("Barrier open at " + start + ": Client on host " + Util.getMyHostname());
 		for (int i = 0; i < ClientServer.getNrSequenceNumberCalls(); i++) {
 			// for (int i = 0; i < 100000; i++) { // LOCAL TESTING
-			int num = serverInterface.getSequenceNumber();
-			System.out.println(num);
+			serverInterface.getSequenceNumber();
 		}
 		long end = System.nanoTime();
 
-		serverInterface.setDone(end - start);
+		logger.info("Last Sequence Number " + serverInterface.getSequenceNumber() + " recieved at " + end +
+			": Client on host " + Util.getMyHostname());
 
-		logger.info("Client " + Util.getMyHostname() + " done");
+		serverInterface.setDone(end - start);
+		logger.info("Client " + Util.getMyHostname() + " done in " + (end - start) + " nanosecond(s)");
 	}
 
 	public static void main(String[] args) {
 		try {
 			new Client().start();
 		} catch (RemoteException | NotBoundException | InterruptedException e) {
-			e.printStackTrace();
+			logger.error("Client " + Util.getMyHostname() + " : " + e.getMessage(), e);
 		}
 	}
 }
