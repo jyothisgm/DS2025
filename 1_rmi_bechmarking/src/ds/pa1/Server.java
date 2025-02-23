@@ -45,8 +45,18 @@ public class Server {
 			// double microsPerCall = aggregatedTime / 100000; // LOCAL TESTING
 			System.out.printf("Time per getSequenceNumber call with %s and %d calls = %.3f microseconds\n",
 					nrClientsString(), totalCalls, microsPerCall);
-			logger.info(String.format("Time per getSequenceNumber call with %s and %d calls = %.3f microseconds\n",
+			logger.info(String.format("Time per getSequenceNumber call with %s and %d calls = %.3f microseconds",
 					nrClientsString(), totalCalls, microsPerCall));
+
+			System.out.printf("Latency for %s and %d calls = %.3f microseconds\n",
+					nrClientsString(), totalCalls, microsPerCall / 2);
+			logger.info(String.format("Latency for %s and %d calls = %.3f microseconds",
+					nrClientsString(), totalCalls, microsPerCall / 2));
+
+			System.out.printf("End-to-End Throughput for %s and %d calls = %.3f bps\n",
+					nrClientsString(), totalCalls, Integer.SIZE *  1_000_000.0 / microsPerCall );
+			logger.info(String.format("End-to-End Throughput for %s and %d calls = %.3f bps",
+					nrClientsString(), totalCalls, Integer.SIZE *  1_000_000.0 / microsPerCall ));
 
 			System.exit(0);
 		} catch (Exception e) {
