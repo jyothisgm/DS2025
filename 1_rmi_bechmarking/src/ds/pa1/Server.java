@@ -54,10 +54,18 @@ public class Server {
 					nrClientsString(), totalCalls, microsPerCall / 2));
 
 			System.out.printf("End-to-End Throughput for %s and %d calls = %.3f bps\n",
-					nrClientsString(), totalCalls, Integer.SIZE *  1_000_000.0 / microsPerCall );
+					nrClientsString(), totalCalls, Integer.SIZE * 1_000_000.0 / microsPerCall);
 			logger.info(String.format("End-to-End Throughput for %s and %d calls = %.3f bps",
-					nrClientsString(), totalCalls, Integer.SIZE *  1_000_000.0 / microsPerCall ));
+					nrClientsString(), totalCalls, Integer.SIZE * 1_000_000.0 / microsPerCall));
 
+			System.out.println("NClients,TotalCalls,Time,MicrosPerCall,Latency,Throughput");
+			logger.info("NClients,TotalCalls,Time,MicrosPerCall,Latency,Throughput");
+			System.out.printf("%s,%d,%.5f,%.5f,%.5f,%.5f\n",
+					Util.getNrClients(), totalCalls, aggregatedTime, microsPerCall, microsPerCall / 2,
+					Integer.SIZE * 1_000_000.0 / microsPerCall);
+			logger.info(String.format("%s,%d,%.5f,%.5f,%.5f,%.5f\n", Util.getNrClients(), totalCalls, aggregatedTime,
+					microsPerCall, microsPerCall / 2,
+					Integer.SIZE * 1_000_000.0 / microsPerCall));
 			System.exit(0);
 		} catch (Exception e) {
 			System.err.println("Eception Occurred in the server: " + e.getMessage());
