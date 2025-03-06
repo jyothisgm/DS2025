@@ -1,5 +1,7 @@
 package ds.pa1;
 
+import java.rmi.RemoteException;
+import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
@@ -15,6 +17,15 @@ public class ServerImplementation implements ServerInterface {
 	private int sequenceNumber = 0;
 	private long aggregatedTimeSequenceNumbers = 0;
 	private int clientsDone = 0;
+	private long objectSize = 0;
+
+	public long getObjectSize() {
+		return objectSize;
+	}
+
+	public void setObjectSize(long objectSize) {
+		this.objectSize = objectSize;
+	}
 
 	public int getClientsDone() {
 		return clientsDone;
@@ -35,10 +46,28 @@ public class ServerImplementation implements ServerInterface {
 	public synchronized int getSequenceNumber() {
 		// synchronized means that only one thread will be able to run it but is this
 		// what we want? this limits throughput
-		/* THANOS: this might run concurently. Need to make threadsafe */
 		sequenceNumber++;
 		return sequenceNumber;
 	}
+
+	/**
+	 * Recieve a large array.
+	 *
+	 * @param data A large 2 dimensional array of doubles
+	 *
+	 */
+	public void sendLargeArray(double[][] data) throws RemoteException {
+        logger.info("Received large array of size: " + data.length + "x" + (data.length > 0 ? data[0].length : 0));
+    }
+
+	/**
+	 * Recieve a HashMap.
+	 *
+	 * @param data A hashmap of Complex object of unknown size
+	 */
+    public void sendComplexObject(HashMap<String, String> data) throws RemoteException {
+        logger.info("Received complex object with " + data.size() + " entries.");
+    }
 
 	/**
 	 * By calling this method, the clients inform the server that they are done. The
@@ -51,10 +80,24 @@ public class ServerImplementation implements ServerInterface {
 	 */
 	@Override
 	public synchronized void setDone(long nanosSequenceNumners) {
-		// THANOS: this might run concurently. Need to make threadsafe
 		aggregatedTimeSequenceNumbers += nanosSequenceNumners;
 		this.clientsDone += 1;
+	}
 
+	/**
+	 * By calling this method, the clients inform the server that they are done. The
+	 * pass some timing statistics to the server, so the server can compute
+	 * latencies and throughputs. This is a function overloaded for sending size of the complex array as well.
+	 *
+	 * @param nanosSequenceNumbers The total time (in nanoseconds) spent in the
+	 *                             getSequenceNumber calls.
+	 * @param nanosSequenceNumbers The total size of the complex object
+	 */
+	@Override
+	public synchronized void setDone(long nanosSequenceNumners, long size) {
+		aggregatedTimeSequenceNumbers += nanosSequenceNumners;
+		this.clientsDone += 1;
+		this.objectSize += size;
 	}
 
 	/**
@@ -67,17 +110,16 @@ public class ServerImplementation implements ServerInterface {
 	@Override
 	public void barrier() {
 		// synchronized is not needed because here we use atomic ints
-		// the barrier
-		// TODO: this might run concurently. Need to make threadsafe
+
 		int currentClientsInBarrier = numClientsInBarrier.incrementAndGet();
 		logger.info("Clients in barrier increased to:" + currentClientsInBarrier);
 		int numClients = Util.getNrClients();
-		int ClientsInBarrier = numClientsInBarrier.get();
-		while (currentClientsInBarrier < numClients) {
+		int clientsInBarrier = numClientsInBarrier.get();
+		while (currentClientsInBarrier < numClients && this.clientsDone % numClients == 0) {
 			try {
 				currentClientsInBarrier = numClientsInBarrier.get();
-				if (ClientsInBarrier < currentClientsInBarrier) {
-					ClientsInBarrier = currentClientsInBarrier;
+				if (clientsInBarrier < currentClientsInBarrier) {
+					clientsInBarrier = currentClientsInBarrier;
 					logger.debug(currentClientsInBarrier + " clients waiting");
 				}
 				Thread.sleep(1);
@@ -90,7 +132,6 @@ public class ServerImplementation implements ServerInterface {
 	}
 
 	// The methods below are only called by the server, and never by a client
-
 	protected long getAggregatedTimeSequenceNumbers() {
 		return aggregatedTimeSequenceNumbers;
 	}
