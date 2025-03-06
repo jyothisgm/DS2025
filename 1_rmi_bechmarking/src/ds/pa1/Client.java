@@ -91,16 +91,51 @@ public class Client {
 		long start = System.nanoTime();
 
 		logger.info("Barrier open at " + start + ": Client on host " + Util.getMyHostname());
+		int sequenceNumber = 0;
+		// for (int i = 0; i < 100000; i++) { // LOCAL TESTING
 		for (int i = 0; i < ClientServer.getNrSequenceNumberCalls(); i++) {
-			// for (int i = 0; i < 100000; i++) { // LOCAL TESTING
-			serverInterface.getSequenceNumber();
+			sequenceNumber = serverInterface.getSequenceNumber();
+			if (i % 1000 == 0) {
+				logger.debug("Checkpoint Sequence Number " + sequenceNumber + " recieved. Client on host " + Util.getMyHostname());
+			}
 		}
 		long end = System.nanoTime();
 
-		logger.info("Last Sequence Number " + serverInterface.getSequenceNumber() + " recieved at " + end +
+		logger.info("Last Sequence Number " + sequenceNumber + " recieved at " + end +
 			": Client on host " + Util.getMyHostname());
 
 		serverInterface.setDone(end - start);
+		logger.info("Client " + Util.getMyHostname() + " done in " + (end - start) + " nanosecond(s)");
+
+		// Send Double Array to Server
+		double [][]arr = new double[1000][1000];
+		serverInterface.barrier();
+
+		start = System.nanoTime();
+		logger.info("Barrier open for Large array at " + start + ": Client on host " + Util.getMyHostname());
+
+		serverInterface.sendLargeArray(arr);
+
+		end = System.nanoTime();
+		logger.info("Large array sent at " + end + ": Client on host " + Util.getMyHostname());
+
+		serverInterface.setDone(end - start);
+		logger.info("Client " + Util.getMyHostname() + " done in " + (end - start) + " nanosecond(s)");
+
+		// Send Complex Object to Server
+		HashMap<String, String> result = createHashMap();
+		long objSize = getHashMapSize(result);
+		serverInterface.barrier();
+
+		start = System.nanoTime();
+		logger.info("Barrier open for Complex Object at " + start + ": Client on host " + Util.getMyHostname());
+
+		serverInterface.sendComplexObject(result);
+
+		end = System.nanoTime();
+		logger.info("Complex Object sent at " + end + ": Client on host " + Util.getMyHostname());
+
+		serverInterface.setDone(end - start, objSize);
 		logger.info("Client " + Util.getMyHostname() + " done in " + (end - start) + " nanosecond(s)");
 	}
 
