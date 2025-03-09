@@ -43,9 +43,8 @@ public class Server {
 
 			System.out.println("NOT SLEEPING");
 			double aggregatedTime = serverImpl.getAggregatedTimeSequenceNumbers() / 1000.0;
-			// long totalCalls = Util.getNrClients() *
-			// ClientServer.getNrSequenceNumberCalls();
-			long totalCalls = Util.getNrClients() * 100000; // LOCAL TESTING
+			long totalCalls = Util.getNrClients() * ClientServer.getNrSequenceNumberCalls();
+			// long totalCalls = Util.getNrClients() * 100000; // LOCAL TESTING
 			double microsPerCall = aggregatedTime / totalCalls;
 			double latency = microsPerCall / 2;
 			double throughput = Integer.SIZE * 1_000_000.0 / microsPerCall;
