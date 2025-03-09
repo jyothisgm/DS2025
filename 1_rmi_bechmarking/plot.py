@@ -26,24 +26,33 @@ for i, subdf in enumerate(dfs):
 metrics = pd.concat(dfs, join="outer", axis=1)
 
 # %%
+fig, ax = plt.subplots()
 metrics.plot(
     x="NClients_1",
     xlabel="Number of Clients",
     ylabel="Latency (μs)",
     y=[s for s in metrics.columns if "Latency" in s],
+    title="Latency",
     kind="line",
     linestyle="-",
     logy=True,
+    ax=ax,
 )
+ax.legend(["Sequence", "Array", "Complex Object"])
+
+fig, ax = plt.subplots()
 metrics.plot(
     x="NClients_1",
     xlabel="Number of Clients",
     ylabel="Throughput (bps)",
     y=[s for s in metrics.columns if "Throughput" in s],
+    title="Throughput",
     kind="line",
     linestyle="-",
     logy=True,
+    ax=ax,
 )
+ax.legend(["Sequence", "Array", "Complex Object"])
 plt.show()
 
 # %%
