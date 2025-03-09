@@ -57,17 +57,17 @@ public class ServerImplementation implements ServerInterface {
 	 *
 	 */
 	public void sendLargeArray(double[][] data) throws RemoteException {
-        logger.info("Received large array of size: " + data.length + "x" + (data.length > 0 ? data[0].length : 0));
-    }
+		logger.info("Received large array of size: " + data.length + "x" + (data.length > 0 ? data[0].length : 0));
+	}
 
 	/**
 	 * Recieve a HashMap.
 	 *
 	 * @param data A hashmap of Complex object of unknown size
 	 */
-    public void sendComplexObject(HashMap<String, String> data) throws RemoteException {
-        logger.info("Received complex object with " + data.size() + " entries.");
-    }
+	public void sendComplexObject(HashMap<String, String> data) throws RemoteException {
+		logger.info("Received complex object with " + data.size() + " entries.");
+	}
 
 	/**
 	 * By calling this method, the clients inform the server that they are done. The
@@ -87,7 +87,8 @@ public class ServerImplementation implements ServerInterface {
 	/**
 	 * By calling this method, the clients inform the server that they are done. The
 	 * pass some timing statistics to the server, so the server can compute
-	 * latencies and throughputs. This is a function overloaded for sending size of the complex array as well.
+	 * latencies and throughputs. This is a function overloaded for sending size of
+	 * the complex array as well.
 	 *
 	 * @param nanosSequenceNumbers The total time (in nanoseconds) spent in the
 	 *                             getSequenceNumber calls.
