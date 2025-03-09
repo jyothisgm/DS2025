@@ -86,7 +86,7 @@ public final class Util {
 	 *         coordinator (i.e., the total number of machines -1).
 	 */
 	public static int getNrClients() {
-		// return 3; // LOCAL TESTING
+		// return 9; // LOCAL TESTING
 		return nodeList.size() - 1;
 	}
 

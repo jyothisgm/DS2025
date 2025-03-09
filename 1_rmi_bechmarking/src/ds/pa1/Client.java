@@ -60,7 +60,7 @@ public class Client {
 		System.err.println("client connecting to " + host);
 		logger.info("Client connecting to " + host + " : Client on host " + Util.getMyHostname());
 
-		Registry registry = LocateRegistry.getRegistry(host);
+		Registry registry = LocateRegistry.getRegistry(host, 1199);
 		logger.debug("Client connected to " + host + " : Client on host " + Util.getMyHostname());
 		ServerInterface clientStub = (ServerInterface) registry.lookup("NumServer");
 		logger.debug("Server stub recieved for " + host + " : Client on host " + Util.getMyHostname());
@@ -96,7 +96,8 @@ public class Client {
 		for (int i = 0; i < ClientServer.getNrSequenceNumberCalls(); i++) {
 			sequenceNumber = serverInterface.getSequenceNumber();
 			if (i % 1000 == 0) {
-				logger.debug("Checkpoint Sequence Number " + sequenceNumber + " recieved. Client on host " + Util.getMyHostname());
+				logger.debug("Checkpoint Sequence Number " + sequenceNumber + " recieved. Client on host "
+						+ Util.getMyHostname());
 			}
 		}
 		long end = System.nanoTime();
@@ -119,7 +120,7 @@ public class Client {
 		end = System.nanoTime();
 		logger.info("Large array sent at " + end + ": Client on host " + Util.getMyHostname());
 
-		serverInterface.setDone(end - start);
+		serverInterface.setDoneArray(end - start);
 		logger.info("Client " + Util.getMyHostname() + " done in " + (end - start) + " nanosecond(s)");
 
 		// Send Complex Object to Server
@@ -135,7 +136,7 @@ public class Client {
 		end = System.nanoTime();
 		logger.info("Complex Object sent at " + end + ": Client on host " + Util.getMyHostname());
 
-		serverInterface.setDone(end - start, objSize);
+		serverInterface.setDoneHash(end - start, objSize);
 		logger.info("Client " + Util.getMyHostname() + " done in " + (end - start) + " nanosecond(s)");
 	}
 

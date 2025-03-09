@@ -28,7 +28,7 @@ public interface ServerInterface extends Remote {
 	public void barrier() throws RemoteException;
 
 	/**
-	 * By calling this method, the clients inform the server that they are done. The
+	 * By calling these methods, the clients inform the server that they are done. The
 	 * pass some timing statistics to the server, so the server can compute
 	 * latencies and throughputs. his method MUST be implemented to get a
 	 * passing grade for this assignment.
@@ -38,16 +38,19 @@ public interface ServerInterface extends Remote {
 	 */
 	public void setDone(long nanosSequenceNumbers) throws RemoteException;
 
+	public void setDoneArray(long nanosSequenceNumbers) throws RemoteException;
+
 	/**
 	 * By calling this method, the clients inform the server that they are done. The
 	 * pass some timing statistics to the server, so the server can compute
-	 * latencies and throughputs. This is a function overloaded for sending size of the complex array as well.
+	 * latencies and throughputs. This is a function overloaded for sending size of
+	 * the complex array as well.
 	 *
 	 * @param nanosSequenceNumbers The total time (in nanoseconds) spent in the
 	 *                             getSequenceNumber calls.
 	 * @param nanosSequenceNumbers The total size of the complex object
 	 */
-	public void setDone(long nanosSequenceNumbers, long size) throws RemoteException;
+	public void setDoneHash(long nanosSequenceNumbers, long size) throws RemoteException;
 
 	/**
 	 * Recieve a large array.

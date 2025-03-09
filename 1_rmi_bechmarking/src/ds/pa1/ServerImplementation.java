@@ -16,6 +16,8 @@ public class ServerImplementation implements ServerInterface {
 
 	private int sequenceNumber = 0;
 	private long aggregatedTimeSequenceNumbers = 0;
+	private long aggregatedTimeArray = 0;
+	private long aggregatedTimeHash = 0;
 	private int clientsDone = 0;
 	private long objectSize = 0;
 
@@ -57,17 +59,17 @@ public class ServerImplementation implements ServerInterface {
 	 *
 	 */
 	public void sendLargeArray(double[][] data) throws RemoteException {
-        logger.info("Received large array of size: " + data.length + "x" + (data.length > 0 ? data[0].length : 0));
-    }
+		logger.info("Received large array of size: " + data.length + "x" + (data.length > 0 ? data[0].length : 0));
+	}
 
 	/**
 	 * Recieve a HashMap.
 	 *
 	 * @param data A hashmap of Complex object of unknown size
 	 */
-    public void sendComplexObject(HashMap<String, String> data) throws RemoteException {
-        logger.info("Received complex object with " + data.size() + " entries.");
-    }
+	public void sendComplexObject(HashMap<String, String> data) throws RemoteException {
+		logger.info("Received complex object with " + data.size() + " entries.");
+	}
 
 	/**
 	 * By calling this method, the clients inform the server that they are done. The
@@ -83,6 +85,11 @@ public class ServerImplementation implements ServerInterface {
 		aggregatedTimeSequenceNumbers += nanosSequenceNumners;
 		this.clientsDone += 1;
 	}
+	@Override
+	public synchronized void setDoneArray(long nanosSequenceNumners) {
+		aggregatedTimeArray += nanosSequenceNumners;
+		this.clientsDone += 1;
+	}
 
 	/**
 	 * By calling this method, the clients inform the server that they are done. The
@@ -94,8 +101,8 @@ public class ServerImplementation implements ServerInterface {
 	 * @param nanosSequenceNumbers The total size of the complex object
 	 */
 	@Override
-	public synchronized void setDone(long nanosSequenceNumners, long size) {
-		aggregatedTimeSequenceNumbers += nanosSequenceNumners;
+	public synchronized void setDoneHash(long nanosSequenceNumners, long size) {
+		aggregatedTimeHash += nanosSequenceNumners;
 		this.clientsDone += 1;
 		this.objectSize += size;
 	}
@@ -114,14 +121,10 @@ public class ServerImplementation implements ServerInterface {
 		int currentClientsInBarrier = numClientsInBarrier.incrementAndGet();
 		logger.info("Clients in barrier increased to:" + currentClientsInBarrier);
 		int numClients = Util.getNrClients();
-		int clientsInBarrier = numClientsInBarrier.get();
-		while (currentClientsInBarrier < numClients && this.clientsDone % numClients == 0) {
+		while (currentClientsInBarrier % numClients != 0) {
 			try {
 				currentClientsInBarrier = numClientsInBarrier.get();
-				if (clientsInBarrier < currentClientsInBarrier) {
-					clientsInBarrier = currentClientsInBarrier;
-					logger.debug(currentClientsInBarrier + " clients waiting");
-				}
+				logger.debug(currentClientsInBarrier + " clients waiting");
 				Thread.sleep(1);
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
@@ -134,5 +137,13 @@ public class ServerImplementation implements ServerInterface {
 	// The methods below are only called by the server, and never by a client
 	protected long getAggregatedTimeSequenceNumbers() {
 		return aggregatedTimeSequenceNumbers;
+	}
+
+	protected long getAggregatedArray() {
+		return aggregatedTimeArray;
+	}
+
+	protected long getAggregatedTimeHash() {
+		return aggregatedTimeHash;
 	}
 }

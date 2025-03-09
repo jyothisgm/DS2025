@@ -40,12 +40,13 @@ public class Server {
 				Thread.sleep(5000);
 			}
 
+			System.out.println("NOT SLEEPING");
 			double aggregatedTime = serverImpl.getAggregatedTimeSequenceNumbers() / 1000.0;
 			long totalCalls = Util.getNrClients() * ClientServer.getNrSequenceNumberCalls();
+			// long totalCalls = Util.getNrClients() * 100000; // LOCAL TESTING
 			double microsPerCall = aggregatedTime / totalCalls;
 			double latency = microsPerCall / 2;
 			double throughput = Integer.SIZE * 1_000_000.0 / microsPerCall;
-			// double microsPerCall = aggregatedTime / 100000; // LOCAL TESTING
 			System.out.printf("Time per getSequenceNumber call with %s and %d calls = %.3f microseconds\n",
 					nrClientsString(), totalCalls, microsPerCall);
 			logger.info(String.format("Time per getSequenceNumber call with %s and %d calls = %.3f microseconds",
@@ -70,7 +71,7 @@ public class Server {
 				Thread.sleep(5000);
 			}
 
-			aggregatedTime = serverImpl.getAggregatedTimeSequenceNumbers() / 1000.0;
+			aggregatedTime = serverImpl.getAggregatedArray() / 1000.0;
 			latency = aggregatedTime / 2;
 			throughput = Double.SIZE * 1024 * 1024 * 1_000_000.0 / aggregatedTime;
 			System.out.printf("Time for Large Array transfer with %s = %.3f microseconds\n",
@@ -97,7 +98,7 @@ public class Server {
 			}
 
 			// Recieve Complex Object
-			aggregatedTime = serverImpl.getAggregatedTimeSequenceNumbers() / 1000.0;
+			aggregatedTime = serverImpl.getAggregatedTimeHash() / 1000.0;
 			latency = aggregatedTime / 2;
 			throughput = serverImpl.getObjectSize() * 8 * 1_000_000.0 / aggregatedTime; // Convert to bits
 			System.out.printf("Time for Complex Object transfer with %s = %.3f microseconds\n",
