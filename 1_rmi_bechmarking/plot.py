@@ -39,7 +39,7 @@ metrics.plot(
     ax=ax,
 )
 ax.legend(["Sequence", "Array", "Complex Object"])
-
+plt.savefig("results_latency.png")
 fig, ax = plt.subplots()
 metrics.plot(
     x="NClients_1",
@@ -53,6 +53,7 @@ metrics.plot(
     ax=ax,
 )
 ax.legend(["Sequence", "Array", "Complex Object"])
-plt.show()
+plt.savefig("results_throughput.png")
+# plt.show()
 
 # %%

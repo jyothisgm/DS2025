@@ -40,7 +40,6 @@ public class Server {
 				Thread.sleep(5000);
 			}
 
-			System.out.println("NOT SLEEPING");
 			double aggregatedTime = serverImpl.getAggregatedTimeSequenceNumbers() / 1000.0;
 			long totalCalls = Util.getNrClients() * ClientServer.getNrSequenceNumberCalls();
 			// long totalCalls = Util.getNrClients() * 100000; // LOCAL TESTING
