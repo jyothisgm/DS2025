@@ -31,8 +31,8 @@ public class Server {
 
 			// TODO Implement your code there that creates a remote object, and exposes it
 			// to the world
-			ServerInterface serverStub = (ServerInterface) UnicastRemoteObject.exportObject(serverImpl, 1099);
-			Registry reg = LocateRegistry.createRegistry(1099);
+			ServerInterface serverStub = (ServerInterface) UnicastRemoteObject.exportObject(serverImpl, 1199);
+			Registry reg = LocateRegistry.createRegistry(1199);
 
 			reg.bind("NumServer", serverStub);
 			logger.info("The server should now be visible on the registry...");
@@ -43,9 +43,10 @@ public class Server {
 
 			System.out.println("NOT SLEEPING");
 			double aggregatedTime = serverImpl.getAggregatedTimeSequenceNumbers() / 1000.0;
-			long totalCalls = Util.getNrClients() * ClientServer.getNrSequenceNumberCalls();
-			double microsPerCall = aggregatedTime / 100000; // LOCAL TESTING
-			// double microsPerCall = aggregatedTime / totalCalls;
+			// long totalCalls = Util.getNrClients() *
+			// ClientServer.getNrSequenceNumberCalls();
+			long totalCalls = Util.getNrClients() * 100000; // LOCAL TESTING
+			double microsPerCall = aggregatedTime / totalCalls;
 			double latency = microsPerCall / 2;
 			double throughput = Integer.SIZE * 1_000_000.0 / microsPerCall;
 			System.out.printf("Time per getSequenceNumber call with %s and %d calls = %.3f microseconds\n",
@@ -72,7 +73,7 @@ public class Server {
 				Thread.sleep(5000);
 			}
 
-			aggregatedTime = serverImpl.getAggregatedTimeSequenceNumbers() / 1000.0;
+			aggregatedTime = serverImpl.getAggregatedArray() / 1000.0;
 			latency = aggregatedTime / 2;
 			throughput = Double.SIZE * 1024 * 1024 * 1_000_000.0 / aggregatedTime;
 			System.out.printf("Time for Large Array transfer with %s = %.3f microseconds\n",
@@ -99,7 +100,7 @@ public class Server {
 			}
 
 			// Recieve Complex Object
-			aggregatedTime = serverImpl.getAggregatedTimeSequenceNumbers() / 1000.0;
+			aggregatedTime = serverImpl.getAggregatedTimeHash() / 1000.0;
 			latency = aggregatedTime / 2;
 			throughput = serverImpl.getObjectSize() * 8 * 1_000_000.0 / aggregatedTime; // Convert to bits
 			System.out.printf("Time for Complex Object transfer with %s = %.3f microseconds\n",
