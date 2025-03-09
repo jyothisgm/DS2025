@@ -91,9 +91,13 @@ public class Client {
 		long start = System.nanoTime();
 
 		logger.info("Barrier open at " + start + ": Client on host " + Util.getMyHostname());
-		for (int i = 0; i < ClientServer.getNrSequenceNumberCalls(); i++) {
-			// for (int i = 0; i < 100000; i++) { // LOCAL TESTING
-			serverInterface.getSequenceNumber();
+		int sequenceNumber = 0;
+		for (int i = 0; i < 100000; i++) { // LOCAL TESTING
+		// for (int i = 0; i < ClientServer.getNrSequenceNumberCalls(); i++) {
+			sequenceNumber = serverInterface.getSequenceNumber();
+			if (i % 1000 == 0) {
+				logger.debug("Checkpoint Sequence Number " + sequenceNumber + " recieved. Client on host " + Util.getMyHostname());
+			}
 		}
 		long end = System.nanoTime();
 

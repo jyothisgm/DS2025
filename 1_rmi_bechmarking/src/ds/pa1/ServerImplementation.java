@@ -41,6 +41,25 @@ public class ServerImplementation implements ServerInterface {
 	}
 
 	/**
+	 * Recieve a large array.
+	 *
+	 * @param data A large 2 dimensional array of doubles
+	 *
+	 */
+	public void sendLargeArray(double[][] data) throws RemoteException {
+		logger.info("Received large array of size: " + data.length + "x" + (data.length > 0 ? data[0].length : 0));
+	}
+
+	/**
+	 * Recieve a HashMap.
+	 *
+	 * @param data A hashmap of Complex object of unknown size
+	 */
+	public void sendComplexObject(HashMap<String, String> data) throws RemoteException {
+		logger.info("Received complex object with " + data.size() + " entries.");
+	}
+
+	/**
 	 * By calling this method, the clients inform the server that they are done. The
 	 * pass some timing statistics to the server, so the server can compute
 	 * latencies and throughputs. his method MUST be implemented to get a passing
@@ -55,6 +74,21 @@ public class ServerImplementation implements ServerInterface {
 		aggregatedTimeSequenceNumbers += nanosSequenceNumners;
 		this.clientsDone += 1;
 
+	/**
+	 * By calling this method, the clients inform the server that they are done. The
+	 * pass some timing statistics to the server, so the server can compute
+	 * latencies and throughputs. This is a function overloaded for sending size of
+	 * the complex array as well.
+	 *
+	 * @param nanosSequenceNumbers The total time (in nanoseconds) spent in the
+	 *                             getSequenceNumber calls.
+	 * @param nanosSequenceNumbers The total size of the complex object
+	 */
+	@Override
+	public synchronized void setDone(long nanosSequenceNumners, long size) {
+		aggregatedTimeSequenceNumbers += nanosSequenceNumners;
+		this.clientsDone += 1;
+		this.objectSize += size;
 	}
 
 	/**
@@ -72,14 +106,10 @@ public class ServerImplementation implements ServerInterface {
 		int currentClientsInBarrier = numClientsInBarrier.incrementAndGet();
 		logger.info("Clients in barrier increased to:" + currentClientsInBarrier);
 		int numClients = Util.getNrClients();
-		int ClientsInBarrier = numClientsInBarrier.get();
-		while (currentClientsInBarrier < numClients) {
+		while (currentClientsInBarrier % numClients != 0) {
 			try {
 				currentClientsInBarrier = numClientsInBarrier.get();
-				if (ClientsInBarrier < currentClientsInBarrier) {
-					ClientsInBarrier = currentClientsInBarrier;
-					logger.debug(currentClientsInBarrier + " clients waiting");
-				}
+				logger.debug(currentClientsInBarrier + " clients waiting");
 				Thread.sleep(1);
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
@@ -92,6 +122,8 @@ public class ServerImplementation implements ServerInterface {
 	// The methods below are only called by the server, and never by a client
 
 	protected long getAggregatedTimeSequenceNumbers() {
-		return aggregatedTimeSequenceNumbers;
+		long temp = aggregatedTimeSequenceNumbers;
+		aggregatedTimeSequenceNumbers = 0;
+		return temp;
 	}
 }

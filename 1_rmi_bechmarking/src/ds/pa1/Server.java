@@ -36,13 +36,17 @@ public class Server {
 			reg.bind("NumServer", serverStub);
 			logger.info("The server should now be visible on the registry...");
 			while (serverImpl.getClientsDone() < Util.getNrClients()) {
-				Thread.sleep(5000);//
+				System.out.println("SLEEPING");
+				Thread.sleep(5000);
 			}
 
+			System.out.println("NOT SLEEPING");
 			double aggregatedTime = serverImpl.getAggregatedTimeSequenceNumbers() / 1000.0;
 			long totalCalls = Util.getNrClients() * ClientServer.getNrSequenceNumberCalls();
-			double microsPerCall = aggregatedTime / totalCalls;
-			// double microsPerCall = aggregatedTime / 100000; // LOCAL TESTING
+			double microsPerCall = aggregatedTime / 100000; // LOCAL TESTING
+			// double microsPerCall = aggregatedTime / totalCalls;
+			double latency = microsPerCall / 2;
+			double throughput = Integer.SIZE * 1_000_000.0 / microsPerCall;
 			System.out.printf("Time per getSequenceNumber call with %s and %d calls = %.3f microseconds\n",
 					nrClientsString(), totalCalls, microsPerCall);
 			logger.info(String.format("Time per getSequenceNumber call with %s and %d calls = %.3f microseconds",
