@@ -1,7 +1,6 @@
 # %%
 import matplotlib.pyplot as plt
 import pandas as pd
-import numpy as np
 
 print("Reading data")
 df = pd.read_csv("results.csv", index_col=False)
@@ -14,46 +13,39 @@ df = pd.read_csv("results.csv", index_col=False)
 #     "Throughput",
 # ]
 print("Plotting results")
-print(df)
 # %%
-one_locations = np.where((df[df.columns[0]] == 1) == True)[0]
-step = len(one_locations)
-dfs = []
-for offset in range(len(one_locations)):
-    dfs.append((df.iloc[offset::step]).reset_index())
-for i, subdf in enumerate(dfs):
-    subdf.columns = [col + f"_{i+1}" for col in subdf.columns]
-metrics = pd.concat(dfs, join="outer", axis=1)
+dfs = {obj_type: sub_df for obj_type, sub_df in df.groupby("Type") if obj_type != "Type"}
+fig, ax = plt.subplots()
 
-# %%
+labels = ["Array", "Complex", "Sequence"]
+# labels = ["Sequence_NoSync", "Sequence"]
+
+for label, each_df in dfs.items():
+    new_df = each_df.set_index('NClients')
+    new_df.index.name = None
+    if label in labels:
+        plt.plot(each_df['NClients'].astype(int), each_df.reset_index(drop=True).set_index('NClients')['Latency'].astype(float), marker='o', label=label)
+        ax.set_xticks(each_df['NClients'].astype(int))
+plt.xlabel("Number of Clients")
+plt.ylabel("Latency (μs)")
+plt.yscale("log")
+plt.title("Latency")
+plt.legend()
+plt.show()
+
 fig, ax = plt.subplots()
-metrics.plot(
-    x="NClients_1",
-    xlabel="Number of Clients",
-    ylabel="Latency (μs)",
-    y=[s for s in metrics.columns if "Latency" in s],
-    title="Latency",
-    kind="line",
-    linestyle="-",
-    logy=True,
-    ax=ax,
-)
-ax.legend(["Sequence", "Array", "Complex Object"])
-plt.savefig("results_latency.png")
-fig, ax = plt.subplots()
-metrics.plot(
-    x="NClients_1",
-    xlabel="Number of Clients",
-    ylabel="Throughput (bps)",
-    y=[s for s in metrics.columns if "Throughput" in s],
-    title="Throughput",
-    kind="line",
-    linestyle="-",
-    logy=True,
-    ax=ax,
-)
-ax.legend(["Sequence", "Array", "Complex Object"])
-plt.savefig("results_throughput.png")
-# plt.show()
+
+for label, each_df in dfs.items():
+    new_df = each_df.set_index('NClients')
+    new_df.index.name = None
+    if label in labels:
+        plt.plot(each_df['NClients'].astype(int), each_df.reset_index(drop=True).set_index('NClients')['Throughput'].astype(float), marker='o', label=label.replace("_", " "))
+        ax.set_xticks(each_df['NClients'].astype(int))
+plt.xlabel("Number of Clients")
+plt.ylabel("Throughput (bps)")
+plt.title("Throughput")
+plt.yscale("log")
+plt.legend()
+plt.show()
 
 # %%

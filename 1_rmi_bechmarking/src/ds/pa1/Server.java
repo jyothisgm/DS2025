@@ -61,9 +61,9 @@ public class Server {
 			logger.info(String.format("End-to-End Throughput for %s and %d calls = %.3f bps",
 					nrClientsString(), totalCalls, throughput));
 
-			System.out.println("NClients,TotalCalls,Time,MicrosPerCall,Latency,Throughput");
-			System.out.printf("%s,%d,%.5f,%.5f,%.5f,%.5f\n",
-					Util.getNrClients(), totalCalls, aggregatedTime, microsPerCall, latency, throughput);
+			System.out.println("NClients,Type,TotalCalls,Time,MicrosPerCall,Latency,Throughput");
+			System.out.printf("%s,%s,%d,%.5f,%.5f,%.5f,%.5f\n",
+					Util.getNrClients(), "Sequence", totalCalls, aggregatedTime, microsPerCall, latency, throughput);
 
 			// Recieve Large Array
 			while (serverImpl.getClientsDone() < Util.getNrClients() * 2) {
@@ -88,9 +88,9 @@ public class Server {
 			logger.info(String.format("End-to-End Throughput for Large Array transfer with %s = %.3f bps",
 					nrClientsString(), throughput));
 
-			System.out.println("NClients,TotalCalls,Time,MicrosPerCall,Latency,Throughput");
-			System.out.printf("%s,%d,%.5f,%.5f,%.5f,%.5f\n",
-					Util.getNrClients(), totalCalls, aggregatedTime, aggregatedTime, latency, throughput);
+			System.out.println("NClients,Type,TotalCalls,Time,MicrosPerCall,Latency,Throughput");
+			System.out.printf("%s,%s,%d,%.5f,%.5f,%.5f,%.5f\n",
+					Util.getNrClients(), "Array", 1, aggregatedTime, microsPerCall, latency, throughput);
 
 			while (serverImpl.getClientsDone() < Util.getNrClients() * 3) {
 				Thread.sleep(5000);
@@ -115,9 +115,9 @@ public class Server {
 			logger.info(String.format("End-to-End Throughput for Complex Object transfer with %s = %.3f bps",
 					nrClientsString(), throughput));
 
-			System.out.println("NClients,TotalCalls,Time,MicrosPerCall,Latency,Throughput");
-			System.out.printf("%s,%d,%.5f,%.5f,%.5f,%.5f\n",
-					Util.getNrClients(), totalCalls, aggregatedTime, aggregatedTime, latency, throughput);
+			System.out.println("NClients,Type,TotalCalls,Time,MicrosPerCall,Latency,Throughput");
+			System.out.printf("%s,%s,%d,%.5f,%.5f,%.5f,%.5f\n",
+					Util.getNrClients(), "Complex", 1, aggregatedTime, microsPerCall, latency, throughput);
 
 			System.exit(0);
 		} catch (Exception e) {
