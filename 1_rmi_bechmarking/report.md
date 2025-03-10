@@ -37,8 +37,18 @@ Results
 -------
 - Show the scalability plot for 1 to 15 clients. you can use the run-all.sh script to run your code with different numbers of clients.
 
-- Explain the behaviour you observe.
-We take note of two interesting observations: First latency increases slightly with number of clients, mostly due to synchronization conditions (we also tested without the synchronous keyword which led to lower latency but also incorrect sequential behaviour due to race conditions). We speculate that this takes place because the more clients that establish a connection with a server using the same remote procedure call, the more threads are trying to access the same synchronized function which leads to queueing of the function call from the threads as well as scheduling overhead. Second is that throughput for arrays and complex objects is much higher than for the sequential case. This probably happens because the former two have a lot more bytes transferred per remote procedure call than the later. Due to the increasing number of procedure calls the sequential case has the overhead of multiple copies, context switching as well as scheduling for a simple integer whereas the former perform much larger data transfer for each of these calls which leads to a higher throughput. 
+In the two images below we see the results of our experiments for latency and throughput. We modified **run-all.sh** to run for 1 to 15 clients and then gathered the results in to the results.csv file using **gather.sh**. Finally we plot the results using **plot.py**. The requiements are just numpy, pandas and matplotlib.
+
+![Latency plot](results_latency.png)
+
+![Throughput plot](results_throughput.png)
+
+## Explain the behaviour you observe.
+
+We take note of two interesting observations: First latency increases almost exponentialy with number of clients, mostly due to synchronization conditions (we also tested without the synchronous keyword which led to lower latency but also incorrect sequential behaviour due to race conditions). We speculate that this takes place because the more clients establish a connection with a server using the same remote procedure call, the more threads are trying to access the same synchronized function which leads to queueing of the function call from the threads as well as scheduling overhead. Furthermore the higher dimentionality of the objects sent also results in a larger serialization overhead and leads to significantly gigher latency for the array and complex object experiments.
+
+
+Second is that throughput for arrays and complex objects is much higher than for the sequential case. This probably happens because the former two have a lot more bytes transferred per remote procedure call than the later. Due to the increasing number of procedure calls the sequential case has the overhead of multiple copies, context switching as well as scheduling for a simple integer whereas the former perform much larger data transfer for each of these calls which leads to a higher throughput. However the communication overhead for multiple clients still causes the throughput to drop exponentialy especially in the array case where there are two orders of magnitude difference between 1 and 15 clients.
 
 
 Acknowledgements for any collaboration or outside help received
