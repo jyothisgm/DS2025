@@ -1,8 +1,12 @@
 package ds.pa1;
 
+import java.net.Inet4Address;
 import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Enumeration;
 
 public final class Util {
 	private static ArrayList<String> nodeList = internalGetHostnames();
@@ -96,12 +100,24 @@ public final class Util {
 	 */
 	public static String getMyIP() {
 		String result = null;
+		// try {
+		// 	result = InetAddress.getLocalHost().getHostAddress();
+		// } catch (UnknownHostException e) {
+		// 	System.err.println("Error while getting my own IP address: " + e);
+		// 	System.exit(1);
+		// }
 		try {
-			result = InetAddress.getLocalHost().getHostAddress();
-		} catch (UnknownHostException e) {
-			System.err.println("Error while getting my own IP address: " + e);
-			System.exit(1);
+			Enumeration<InetAddress> addresses = NetworkInterface.getByName("ib0").getInetAddresses();
+			while (addresses.hasMoreElements()){
+				InetAddress address = addresses.nextElement();
+				if (address instanceof Inet4Address){
+					result = address.getHostAddress();
+				}
+			}
+		} catch (SocketException e) {
+			e.printStackTrace();
 		}
+		System.out.printf("Hostname: %s | IP Address: %s,\n",Util.getMyHostname(),result);
 		return result;
 	}
 

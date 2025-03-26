@@ -3,7 +3,9 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 print("Reading data")
-df = pd.read_csv("results.csv", index_col=False)
+eth = pd.read_csv("results.csv", index_col=False)
+ib = pd.read_csv("results_ib.csv", index_col=False)
+
 # df.columns = [
 #     "Number of Clients",
 #     "Total Requests",
@@ -14,12 +16,16 @@ df = pd.read_csv("results.csv", index_col=False)
 # ]
 print("Plotting results")
 # %%
-dfs = {obj_type: sub_df for obj_type, sub_df in df.groupby("Type") if obj_type != "Type"}
+ib_text = " (infiniband)"
+eth_dfs = {obj_type: sub_df for obj_type, sub_df in eth.groupby("Type") if obj_type != "Type"}
+ib_dfs = {obj_type+ib_text: sub_df for obj_type, sub_df in ib.groupby("Type") if obj_type != "Type"}
+dfs = {**eth_dfs,**ib_dfs}
 fig, ax = plt.subplots()
 
-labels = ["Array", "Complex", "Sequence"]
+labels = ["Array", "Sequence"]
+labels += [i+ ib_text for i in labels]
 # labels = ["Sequence_NoSync", "Sequence"]
-
+#%%
 for label, each_df in dfs.items():
     new_df = each_df.set_index('NClients')
     new_df.index.name = None

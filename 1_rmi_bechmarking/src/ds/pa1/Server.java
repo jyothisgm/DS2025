@@ -31,7 +31,10 @@ public class Server {
 
 			// TODO Implement your code there that creates a remote object, and exposes it
 			// to the world
-			ServerInterface serverStub = (ServerInterface) UnicastRemoteObject.exportObject(serverImpl, 1099);
+			String ibIP = Util.getMyIP();
+			System.setProperty("java.rmi.server.hostname", ibIP);
+			System.out.println("java.rmi.server.hostname: "+System.getProperty("java.rmi.server.hostname"));
+			ServerInterface serverStub = (ServerInterface) UnicastRemoteObject.exportObject(serverImpl, 1199);
 			Registry reg = LocateRegistry.createRegistry(1099);
 
 			reg.bind("NumServer", serverStub);

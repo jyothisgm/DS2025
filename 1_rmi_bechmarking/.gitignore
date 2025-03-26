@@ -4,6 +4,6 @@
 /.settings/
 /build/
 /dist/
-
+/logs*/
 .vscode/
 logs/

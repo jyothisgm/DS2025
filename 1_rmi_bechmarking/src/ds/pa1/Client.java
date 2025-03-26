@@ -59,8 +59,8 @@ public class Client {
 		String host = Util.getCoordinatorHostname();
 		System.err.println("client connecting to " + host);
 		logger.info("Client connecting to " + host + " : Client on host " + Util.getMyHostname());
-
 		Registry registry = LocateRegistry.getRegistry(host, 1099);
+		
 		logger.debug("Client connected to " + host + " : Client on host " + Util.getMyHostname());
 		ServerInterface clientStub = (ServerInterface) registry.lookup("NumServer");
 		logger.debug("Server stub recieved for " + host + " : Client on host " + Util.getMyHostname());
