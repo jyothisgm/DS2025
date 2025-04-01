@@ -47,36 +47,42 @@ public class MapReduce {
 	private final ArrayList<Tuple> currentOutputTuples = new ArrayList<Tuple>();
 
 	private Queue<List<String>> mapQueue = new LinkedList<>();
-	public Queue<List<String>> getMapQueue() {
+	public synchronized Queue<List<String>> getMapQueue() {
 		return mapQueue;
 	}
 
 	private HashMap<String, List<String>> mapTakenList = new HashMap<>();
-
-	public List<String> getMapJob(String key) {
+	public synchronized List<String> getMapJob(String key) {
 		List<String> mapTaken = mapQueue.poll();
 		this.mapTakenList.put(key, mapTaken);
 		return mapTaken;
 	}
 
-	public HashMap<String, List<String>> getMapTakenList() {
+	public synchronized HashMap<String, List<String>> getMapTakenList() {
 		return mapTakenList;
 	}
 
+	public synchronized void removeFromMapTakenList(String key) {
+		mapTakenList.remove(key);
+	}
+
 	private Queue<List<String>> reduceQueue = new LinkedList<>();
-	public Queue<List<String>> getReduceQueue() {
+	public synchronized Queue<List<String>> getReduceQueue() {
 		return reduceQueue;
 	}
 
 	private HashMap<String, List<String>> reduceTakenList = new HashMap<>();
+	public synchronized void removeFromReduceTakenList(String key) {
+		mapTakenList.remove(key);
+	}
 
-	public List<String> getReduceJob(String key) {
+	public synchronized List<String> getReduceJob(String key) {
 		List<String> reduceTaken = reduceQueue.poll();
 		this.reduceTakenList.put(key, reduceTaken);
 		return reduceTaken;
 	}
 
-	public HashMap<String, List<String>> getReduceTakenList() {
+	public synchronized HashMap<String, List<String>> getReduceTakenList() {
 		return reduceTakenList;
 	}
 
@@ -223,8 +229,9 @@ public class MapReduce {
 		logger.info("starting map phase");
 		start = System.nanoTime();
 		List<String> mapJob = getMapJob(worker);
-			if (!mapJob.isEmpty()) {
+		if (!mapJob.isEmpty()) {
 			runMapPhase(mapJob);
+			removeFromMapTakenList(worker);
 			elapsed = (System.nanoTime() - start) / 1000000;
 			totalTime += elapsed;
 			logger.info("map phase took: " + elapsed + " milliseconds.");
