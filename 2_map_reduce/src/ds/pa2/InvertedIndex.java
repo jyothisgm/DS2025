@@ -60,8 +60,8 @@ public final class InvertedIndex implements MapReduceApplication {
 	 * coordinator for work.
 	 */
 	@Override
-	public void start() throws IllegalArgumentException, IOException {
-		mr.mapReduce();
+	public void start(String worker) throws IllegalArgumentException, IOException {
+		mr.mapReduce(worker);
 
 		// sort here to make validation easier
 		sortOutput();
@@ -165,5 +165,10 @@ public final class InvertedIndex implements MapReduceApplication {
 	@Override
 	public void postProcess(String key, String value1, String value2) throws IOException {
 		mr.emitFinal(key, value1 + ":" + value2);
+	}
+
+	@Override
+	public MapReduce getMr() {
+		return this.mr;
 	}
 }

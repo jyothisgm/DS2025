@@ -30,6 +30,7 @@ public final class WordCount implements MapReduceApplication {
 		// Create a config object with the configuration, and then configure MapReduce.
 		config = new Config(args[1], args[2], args[3]);
 		mr.configure(config);
+		mr.generateMapQueue();
 	}
 
 	/**
@@ -38,8 +39,8 @@ public final class WordCount implements MapReduceApplication {
 	 * coordinator for work.
 	 */
 	@Override
-	public void start() throws IllegalArgumentException, IOException {
-		mr.mapReduce();
+	public void start(String worker) throws IllegalArgumentException, IOException {
+		mr.mapReduce(worker);
 	}
 
 	@Override
@@ -68,5 +69,10 @@ public final class WordCount implements MapReduceApplication {
 	@Override
 	public void postProcess(String key, String value1, String value2) throws IOException {
 		mr.emitFinal(key, "" + (Integer.parseInt(value1) + Integer.parseInt(value2)));
+	}
+
+	@Override
+	public MapReduce getMr() {
+		return this.mr;
 	}
 }
