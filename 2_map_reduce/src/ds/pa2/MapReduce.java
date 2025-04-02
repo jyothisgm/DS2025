@@ -27,7 +27,12 @@ import org.slf4j.LoggerFactory;
 public class MapReduce {
     private static Logger logger = LoggerFactory.getLogger(MapReduce.class);
     private Config config;
-    private static MapReduceApplication userApplication;
+
+    public Config getConfig() {
+		return config;
+	}
+
+	private static MapReduceApplication userApplication;
 
     private int currentIntermediateFileNumber = 0;
     private int currentIntermediateSize = 0;

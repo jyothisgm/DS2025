@@ -82,6 +82,7 @@ public final class InvertedIndex implements MapReduceApplication {
 	public void start() throws IllegalArgumentException, IOException {
 		if (Util.amICoordinator()) {
 			StubImpl serverImpl = new StubImpl();
+			serverImpl.populateMapQueue(this.mr.getConfig());
 			StubInterface serverStub = (StubInterface) UnicastRemoteObject.exportObject(serverImpl, 1099);
 			Registry reg = LocateRegistry.createRegistry(1099);
 

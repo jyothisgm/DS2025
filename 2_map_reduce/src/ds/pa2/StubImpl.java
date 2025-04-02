@@ -86,7 +86,7 @@ public class StubImpl implements StubInterface {
         throw new UnsupportedOperationException("Unimplemented method 'isReducePhaseOver'");
     }
 
-    public void generateMapQueue(Config config) {
+    public void populateMapQueue(Config config) {
 		File[] files = new File(config.getInputDir()).listFiles();
         if (files == null || files.length == 0) {
             System.out.println("No files found in directory: " + config.getInputDir());
