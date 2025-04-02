@@ -1,7 +1,6 @@
 package ds.pa2;
 
 import java.io.IOException;
-import java.rmi.Remote;
 
 /**
  * This interface defines all methods that a user defined MapReduce application
@@ -13,7 +12,7 @@ import java.rmi.Remote;
  * final result.
  * 
  */
-public interface MapReduceApplication extends Remote {
+public interface MapReduceApplication {
 	/**
 	 * This method is used to pass the user configuration to the MapReduce
 	 * application. This method should be called on the coordinator and all worker nodes.
@@ -37,8 +36,9 @@ public interface MapReduceApplication extends Remote {
 	 *             the application.
 	 * @throws IOException
 	 * @throws IllegalArgumentException
+	 * @throws InterruptedException
 	 */
-	public void start(String hostname) throws IOException, IllegalArgumentException;
+	public void start() throws IOException, IllegalArgumentException, InterruptedException;
 
 	/**
 	 * The map method should invoke emitIntermediate(String key, String value) on
@@ -72,6 +72,4 @@ public interface MapReduceApplication extends Remote {
 	 * @throws IOException
 	 */
 	public void postProcess(String key, String value1, String value2) throws IOException;
-
-	public MapReduce getMr();
 }

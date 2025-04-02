@@ -7,8 +7,15 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.rmi.AlreadyBoundException;
+import java.rmi.NotBoundException;
+import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.TreeMap;
 
 import org.slf4j.Logger;
@@ -53,6 +60,18 @@ public final class InvertedIndex implements MapReduceApplication {
 		}
 		Arrays.sort(fileNames);
 	}
+
+	private StubInterface connect() throws RemoteException, NotBoundException {
+		String host = Util.getCoordinatorHostname();
+		System.err.println("client connecting to " + host);
+		logger.info("Client connecting to " + host + " : Client on host " + Util.getMyHostname());
+
+		Registry registry = LocateRegistry.getRegistry(host, 1099);
+		logger.debug("Client connected to " + host + " : Client on host " + Util.getMyHostname());
+		StubInterface server = (StubInterface) registry.lookup("NumServer");
+		logger.debug("Server stub recieved for " + host + " : Client on host " + Util.getMyHostname());
+		return server;
+	}
 		
 	/**
 	 * The MapReduce framework calls this start method ON THE COORDINATOR node when
@@ -60,8 +79,47 @@ public final class InvertedIndex implements MapReduceApplication {
 	 * coordinator for work.
 	 */
 	@Override
-	public void start(String worker) throws IllegalArgumentException, IOException {
-		mr.mapReduce(worker);
+	public void start() throws IllegalArgumentException, IOException {
+		if (Util.amICoordinator()) {
+			StubImpl serverImpl = new StubImpl();
+			StubInterface serverStub = (StubInterface) UnicastRemoteObject.exportObject(serverImpl, 1099);
+			Registry reg = LocateRegistry.createRegistry(1099);
+
+			try {
+				reg.bind("NumServer", serverStub);
+			} catch (RemoteException | AlreadyBoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			logger.info("The server should now be visible on the registry...");
+			while (!serverImpl.getMapQueue().isEmpty()) {
+				try {
+					Thread.sleep(5000);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+
+		} else {
+			logger.info("Client started on host " + Util.getMyHostname() + " master = " + Util.getCoordinatorHostname());
+
+			StubInterface server = null;
+			while (Objects.isNull(server)) {
+				try {
+					server = connect();
+				} catch (RemoteException | NotBoundException e) {
+					logger.warn(e.getMessage(), e);
+					try {
+						Thread.sleep(100);
+					} catch (InterruptedException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
+				}
+			}
+			mr.mapReduce(server);
+		}
 
 		// sort here to make validation easier
 		sortOutput();
@@ -165,10 +223,5 @@ public final class InvertedIndex implements MapReduceApplication {
 	@Override
 	public void postProcess(String key, String value1, String value2) throws IOException {
 		mr.emitFinal(key, value1 + ":" + value2);
-	}
-
-	@Override
-	public MapReduce getMr() {
-		return this.mr;
 	}
 }

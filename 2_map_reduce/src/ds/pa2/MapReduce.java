@@ -8,18 +8,9 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.StandardCopyOption;
-import java.rmi.AlreadyBoundException;
-import java.rmi.NotBoundException;
-import java.rmi.RemoteException;
-import java.rmi.registry.LocateRegistry;
-import java.rmi.registry.Registry;
-import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Queue;
 import java.util.TreeMap;
 
 import org.slf4j.Logger;
@@ -34,75 +25,24 @@ import org.slf4j.LoggerFactory;
  * while the clients run new code that you have to write.
  */
 public class MapReduce {
-	private static Logger logger = LoggerFactory.getLogger(MapReduce.class);
-	private Config config;
-	private static MapReduceApplication userApplication;
+    private static Logger logger = LoggerFactory.getLogger(MapReduce.class);
+    private Config config;
+    private static MapReduceApplication userApplication;
 
-	private int currentIntermediateFileNumber = 0;
-	private int currentIntermediateSize = 0;
-	private final ArrayList<Tuple> currentIntermediateTuples = new ArrayList<Tuple>();
+    private int currentIntermediateFileNumber = 0;
+    private int currentIntermediateSize = 0;
+    private final ArrayList<Tuple> currentIntermediateTuples = new ArrayList<Tuple>();
 
-	private int currentOutputFileNumber = 0;
-	private int currentOutputSize = 0;
-	private final ArrayList<Tuple> currentOutputTuples = new ArrayList<Tuple>();
+    private int currentOutputFileNumber = 0;
+    private int currentOutputSize = 0;
+    private final ArrayList<Tuple> currentOutputTuples = new ArrayList<Tuple>();
 
-	private Queue<List<String>> mapQueue = new LinkedList<>();
-	public synchronized Queue<List<String>> getMapQueue() {
-		return mapQueue;
-	}
-
-	private HashMap<String, List<String>> mapTakenList = new HashMap<>();
-	public synchronized List<String> getMapJob(String key) {
-		List<String> mapTaken = mapQueue.poll();
-		this.mapTakenList.put(key, mapTaken);
-		return mapTaken;
-	}
-
-	public synchronized HashMap<String, List<String>> getMapTakenList() {
-		return mapTakenList;
-	}
-
-	public synchronized void removeFromMapTakenList(String key) {
-		mapTakenList.remove(key);
-	}
-
-	private Queue<List<String>> reduceQueue = new LinkedList<>();
-	public synchronized Queue<List<String>> getReduceQueue() {
-		return reduceQueue;
-	}
-
-	private HashMap<String, List<String>> reduceTakenList = new HashMap<>();
-	public synchronized void removeFromReduceTakenList(String key) {
-		mapTakenList.remove(key);
-	}
-
-	public synchronized List<String> getReduceJob(String key) {
-		List<String> reduceTaken = reduceQueue.poll();
-		this.reduceTakenList.put(key, reduceTaken);
-		return reduceTaken;
-	}
-
-	public synchronized HashMap<String, List<String>> getReduceTakenList() {
-		return reduceTakenList;
-	}
-
-	private int BATCH_SIZE = 32;
-
-	/**
-	 * A treeMap is sorted. This is very useful for checking whether the output is
-	 * correct. Some steps can be non-deterministic, so the order of key/value pairs
-	 * may be different. Sorting resolves this, and ensures we can simply do a diff.
-	 */
-	private final TreeMap<String, String> postProcessingMap = new TreeMap<String, String>();
-
-	public static MapReduceApplication registerStub(MapReduceApplication userApplication) throws RemoteException, AlreadyBoundException{
-		MapReduceApplication serverStub = (MapReduceApplication) UnicastRemoteObject.exportObject(userApplication, 1099);
-		Registry reg = LocateRegistry.createRegistry(1099);
-
-		reg.bind("NumServer", serverStub);
-		logger.info("The server should now be visible on the registry...");
-		return serverStub;
-	}
+    /**
+     * A treeMap is sorted. This is very useful for checking whether the output is
+     * correct. Some steps can be non-deterministic, so the order of key/value pairs
+     * may be different. Sorting resolves this, and ensures we can simply do a diff.
+     */
+    private final TreeMap<String, String> postProcessingMap = new TreeMap<String, String>();
 
     /**
      * The entry point for MapReduce. The arguments are: 0: the class name of the
@@ -117,73 +57,38 @@ public class MapReduce {
      * @param args
      */
     public static void main(String[] args) {
-		if (args.length != 4) {
-			System.err.println(
-				"Usage: java ds.pa2.MapReduce <application class name> <input dir> <intermediate dir> <output dir>");
-			System.exit(1);
-		}
+	if (args.length != 4) {
+	    System.err.println(
+		    "Usage: java ds.pa2.MapReduce <application class name> <input dir> <intermediate dir> <output dir>");
+	    System.exit(1);
+	}
 
-		// We will now find the Class containing the user program, based on the name
-		// provided by the user.
-		// Next, we instantiate that class and call the default constructor (without
-		// arguments)
+	// We will now find the Class containing the user program, based on the name
+	// provided by the user.
+	// Next, we instantiate that class and call the default constructor (without
+	// arguments)
+	try {
+	    Class<?> appClass = Class.forName(args[0]);
+	    userApplication = (MapReduceApplication) appClass.getDeclaredConstructor().newInstance();
+	} catch (Exception e) {
+	    System.err.println("Cannot find the constructor of the main class " + args[0] + ": " + e);
+	    System.exit(1);
+	}
 
-		if(Util.amICoordinator()) {
-			try {
-				// I am the Master
-				Class<?> appClass = Class.forName(args[0]);
-				userApplication = (MapReduceApplication) appClass.getDeclaredConstructor().newInstance();
-			} catch (Exception e) {
-				System.err.println("Cannot find the constructor of the main class " + args[0] + ": " + e);
-				System.exit(1);
-			}
-			// We now create a new MapReduce object that will handle all IO and scheduling.
-			// Finally, we call start on the user application, to give control to the
-			// application.
-			// It should create a configuration and invoke mapReduce() when it has
-			// initialized its data structures.
-			logger.info("starting user application: " + args[0]);
-			try {
-				userApplication.configure(new MapReduce(), args);
-				userApplication = registerStub(userApplication);
-				// userApplication.start();
-				// TODO: Run Server till Map and Reduce are Done
-				while (!userApplication.getMr().getMapQueue().isEmpty() || !userApplication.getMr().getMapTakenList().isEmpty() ||
-						!userApplication.getMr().getReduceQueue().isEmpty() || !userApplication.getMr().getReduceTakenList().isEmpty()) {
-					try {
-						Thread.sleep(5000);
-						// TODO: HeartBeat
-					} catch (InterruptedException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-				}
-
-			} catch (IllegalArgumentException | IOException e) {
-				System.err.println("An error occurred: " + e.getMessage());
-				e.printStackTrace();
-				System.exit(1);
-			} catch (AlreadyBoundException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		} else {
-			// I am a Worker
-			try {
-				String host = Util.getCoordinatorHostname();
-				System.err.println("client connecting to " + host);
-				logger.info("Client connecting to " + host + " : Client on host " + Util.getMyHostname());
-
-				Registry registry = LocateRegistry.getRegistry(host, 1099);
-				logger.debug("Client connected to " + host + " : Client on host " + Util.getMyHostname());
-				MapReduceApplication clientStub = (MapReduceApplication) registry.lookup("NumServer");
-				logger.debug("Server stub recieved for " + host + " : Client on host " + Util.getMyHostname());
-				clientStub.start(Util.getMyHostname());
-			} catch (IOException | NotBoundException | IllegalArgumentException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
+	// We now create a new MapReduce object that will handle all IO and scheduling.
+	// Finally, we call start on the user application, to give control to the
+	// application.
+	// It should create a configuration and invoke mapReduce() when it has
+	// initialized its data structures.
+	logger.info("starting user application: " + args[0]);
+	try {
+	    userApplication.configure(new MapReduce(), args);
+	    userApplication.start();
+	} catch (IllegalArgumentException | IOException | InterruptedException e) {
+	    System.err.println("An error occurred: " + e.getMessage());
+	    e.printStackTrace();
+	    System.exit(1);
+	}
     }
 
     /**
@@ -216,27 +121,28 @@ public class MapReduce {
      * @throws IOException
      * 
      */
-    public void mapReduce(String worker) throws IOException, IllegalArgumentException {
+    public void mapReduce(StubInterface server) throws IOException, IllegalArgumentException {
 	if (config == null) {
 	    throw new IllegalArgumentException(
 		    "You forgot to provide a Config to mapReduce via the method configure()");
 	}
-	long totalTime = 0;
-	long start;
-	long elapsed;
-	while (!userApplication.getMr().getMapQueue().isEmpty() ||
-			!userApplication.getMr().getMapTakenList().isEmpty()) {
+
+	long start, elapsed, totalTime = 0;
+	boolean isMapPhaseOver = false;
+	while (!isMapPhaseOver) {
 		logger.info("starting map phase");
 		start = System.nanoTime();
-		List<String> mapJob = getMapJob(worker);
-		if (!mapJob.isEmpty()) {
-			runMapPhase(mapJob);
-			removeFromMapTakenList(worker);
-			elapsed = (System.nanoTime() - start) / 1000000;
-			totalTime += elapsed;
-			logger.info("map phase took: " + elapsed + " milliseconds.");
+		List<String> files = server.getMapJob(Util.getMyHostname());
+		if(!files.isEmpty()) {
+			runMapPhase(files);
+			server.mapJobCompleted(Util.getMyHostname());
 		}
+		isMapPhaseOver = server.isMapPhaseOver();
+		elapsed = (System.nanoTime() - start) / 1000000;
+		totalTime += elapsed;
+		logger.info("map phase took: " + elapsed + " milliseconds.");
 	}
+
 	logger.info("starting reduce phase");
 	start = System.nanoTime();
 	runReducePhase();
@@ -342,30 +248,6 @@ public class MapReduce {
 	return new Tuple(splitLine[0], splitLine[1]);
     }
 
-	public void generateMapQueue () {
-		File[] files = new File(config.getInputDir()).listFiles();
-        if (files == null || files.length == 0) {
-            System.out.println("No files found in directory: " + config.getInputDir());
-            return;
-        }
-        List<String> batch = new ArrayList<>();
-        for (File file : files) {
-            if (file.isFile()) {
-                batch.add(file.getAbsolutePath());
-                if (batch.size() == BATCH_SIZE) {
-                    mapQueue.offer(new ArrayList<>(batch));
-                    batch.clear();
-                }
-            }
-        }
-        // Add any remaining files that didn't complete a full batch
-        if (!batch.isEmpty()) {
-            mapQueue.offer(batch);
-        }
-
-        System.out.println("Batched " + files.length + " files into " + mapQueue.size() + " batches.");
-    }
-
     /**
      * This method runs the entire map phase. It iterates over the input files, and
      * calls the user defined map operation for every line in the file. Note that we
@@ -373,16 +255,17 @@ public class MapReduce {
      * 
      * @throws IOException
      */
-    private void runMapPhase(List<String> batchFiles) throws IOException {
-		for (String filePath : batchFiles) {
-			logger.debug("mapping file: " + filePath);
-			File file = new File(filePath);
-			try (BufferedReader in = new BufferedReader(new FileReader(file))) {
-				List<String> allLines = Arrays.asList(in.lines().toArray(String[]::new));
-				userApplication.map(file.getName(), allLines);
-			}
-		}
-		flushIntermediate();
+    private void runMapPhase(List<String> files) throws IOException {
+	for (String filePath : files) {
+	    logger.debug("mapping file: " + filePath);
+		File file = new File(filePath);
+	    try (BufferedReader in = new BufferedReader(new FileReader(file))) {
+			List<String> allLines = Arrays.asList(in.lines().toArray(String[]::new));
+			userApplication.map(file.getName(), allLines);
+	    }
+	}
+
+	flushIntermediate();
     }
 
     /**

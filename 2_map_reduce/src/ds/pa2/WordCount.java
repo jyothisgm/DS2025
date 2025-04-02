@@ -1,6 +1,17 @@
 package ds.pa2;
 
 import java.io.IOException;
+import java.rmi.AlreadyBoundException;
+import java.rmi.NotBoundException;
+import java.rmi.RemoteException;
+import java.util.Objects;
+
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This is an example MapReduce user application. It counts word occurrences in
@@ -13,6 +24,7 @@ public final class WordCount implements MapReduceApplication {
 	String[] args;
 	MapReduce mr;
 	Config config;
+	private static Logger logger = LoggerFactory.getLogger(WordCount.class);
 
 	/**
 	 * The MapReduce framework calls this configure method on ALL nodes (the
@@ -30,7 +42,18 @@ public final class WordCount implements MapReduceApplication {
 		// Create a config object with the configuration, and then configure MapReduce.
 		config = new Config(args[1], args[2], args[3]);
 		mr.configure(config);
-		mr.generateMapQueue();
+	}
+
+	private StubInterface connect() throws RemoteException, NotBoundException {
+		String host = Util.getCoordinatorHostname();
+		System.err.println("client connecting to " + host);
+		logger.info("Client connecting to " + host + " : Client on host " + Util.getMyHostname());
+
+		Registry registry = LocateRegistry.getRegistry(host, 1099);
+		logger.debug("Client connected to " + host + " : Client on host " + Util.getMyHostname());
+		StubInterface server = (StubInterface) registry.lookup("NumServer");
+		logger.debug("Server stub recieved for " + host + " : Client on host " + Util.getMyHostname());
+		return server;
 	}
 
 	/**
@@ -39,8 +62,47 @@ public final class WordCount implements MapReduceApplication {
 	 * coordinator for work.
 	 */
 	@Override
-	public void start(String worker) throws IllegalArgumentException, IOException {
-		mr.mapReduce(worker);
+	public void start() throws IllegalArgumentException, IOException {
+		if (Util.amICoordinator()) {
+			StubImpl serverImpl = new StubImpl();
+			StubInterface serverStub = (StubInterface) UnicastRemoteObject.exportObject(serverImpl, 1099);
+			Registry reg = LocateRegistry.createRegistry(1099);
+
+			try {
+				reg.bind("NumServer", serverStub);
+			} catch (RemoteException | AlreadyBoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			logger.info("The server should now be visible on the registry...");
+			while (!serverImpl.getMapQueue().isEmpty()) {
+				try {
+					Thread.sleep(5000);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+
+		} else {
+			logger.info("Client started on host " + Util.getMyHostname() + " master = " + Util.getCoordinatorHostname());
+
+			StubInterface server = null;
+			while (Objects.isNull(server)) {
+				try {
+					server = connect();
+				} catch (RemoteException | NotBoundException e) {
+					logger.warn(e.getMessage(), e);
+					try {
+						Thread.sleep(100);
+					} catch (InterruptedException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
+				}
+			}
+			mr.mapReduce(server);
+		}
 	}
 
 	@Override
@@ -69,10 +131,5 @@ public final class WordCount implements MapReduceApplication {
 	@Override
 	public void postProcess(String key, String value1, String value2) throws IOException {
 		mr.emitFinal(key, "" + (Integer.parseInt(value1) + Integer.parseInt(value2)));
-	}
-
-	@Override
-	public MapReduce getMr() {
-		return this.mr;
 	}
 }

@@ -1,0 +1,121 @@
+package ds.pa2;
+
+import java.io.File;
+import java.rmi.RemoteException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Queue;
+
+
+/**
+ * Code for the client side. This will run n-1 times, on ranks 1 .. n (where n
+ * is the number of nodes passed to srun
+ *
+ * TODO: You have to modify and extend this file.
+ */
+public class StubImpl implements StubInterface {
+    private int BATCH_SIZE = 32;
+    private Queue<List<String>> mapQueue = new LinkedList<>();
+
+
+    public synchronized Queue<List<String>> getMapQueue() {
+		return mapQueue;
+	}
+
+	private HashMap<String, List<String>> mapTakenList = new HashMap<>();
+
+    @Override
+	public synchronized List<String> getMapJob(String key) throws RemoteException {
+		List<String> mapTaken = mapQueue.poll();
+		this.mapTakenList.put(key, mapTaken);
+		return mapTaken;
+	}
+
+	public synchronized HashMap<String, List<String>> getMapTakenList() {
+		return mapTakenList;
+	}
+
+	public synchronized void removeFromMapTakenList(String key) {
+		mapTakenList.remove(key);
+	}
+
+	private Queue<List<String>> reduceQueue = new LinkedList<>();
+	public Queue<List<String>> getReduceQueue() {
+		return reduceQueue;
+	}
+
+	private HashMap<String, List<String>> reduceTakenList = new HashMap<>();
+	public synchronized void removeFromReduceTakenList(String key) {
+		mapTakenList.remove(key);
+	}
+
+    @Override
+	public synchronized List<String> getReduceJob(String key) throws RemoteException{
+		List<String> reduceTaken = reduceQueue.poll();
+		this.reduceTakenList.put(key, reduceTaken);
+		return reduceTaken;
+	}
+
+	public synchronized HashMap<String, List<String>> getReduceTakenList() {
+		return reduceTakenList;
+	}
+
+    @Override
+    public void barrier() throws RemoteException {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'barrier'");
+    }
+
+    @Override
+    public boolean heartBeat() throws RemoteException {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'heartBeat'");
+    }
+
+    @Override
+    public boolean isMapPhaseOver() throws RemoteException {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'isMapPhaseOver'");
+    }
+
+    @Override
+    public boolean isReducePhaseOver() throws RemoteException {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'isReducePhaseOver'");
+    }
+
+    public void generateMapQueue(Config config) {
+		File[] files = new File(config.getInputDir()).listFiles();
+        if (files == null || files.length == 0) {
+            System.out.println("No files found in directory: " + config.getInputDir());
+            return;
+        }
+        List<String> batch = new ArrayList<>();
+        for (File file : files) {
+            if (file.isFile()) {
+                batch.add(file.getAbsolutePath());
+                if (batch.size() == BATCH_SIZE) {
+                    mapQueue.offer(new ArrayList<>(batch));
+                    batch.clear();
+                }
+            }
+        }
+        // Add any remaining files that didn't complete a full batch
+        if (!batch.isEmpty()) {
+            mapQueue.offer(batch);
+        }
+
+        System.out.println("Batched " + files.length + " files into " + mapQueue.size() + " batches.");
+    }
+
+    @Override
+    public boolean mapJobCompleted(String hostname) throws RemoteException {
+        if (!this.getMapQueue().isEmpty() || !this.getMapTakenList().isEmpty()) {
+            return false;
+        }
+        return true;
+    }
+
+}
