@@ -10,7 +10,9 @@ import java.io.IOException;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.TreeMap;
 
 import org.slf4j.Logger;
@@ -37,6 +39,7 @@ public class MapReduce {
     private int currentIntermediateFileNumber = 0;
     private int currentIntermediateSize = 0;
     private final ArrayList<Tuple> currentIntermediateTuples = new ArrayList<Tuple>();
+	private final HashMap<String,Integer> currentIntermediateHashmap = new HashMap<String,Integer>(); 
 
     private int currentOutputFileNumber = 0;
     private int currentOutputSize = 0;
@@ -178,12 +181,23 @@ public class MapReduce {
      * @throws IOException
      */
     public void emitIntermediate(String key, String value) throws IOException {
-	currentIntermediateSize += key.length() + value.length();
-	if (currentIntermediateSize >= config.getIntermediateChunkSize()) {
-	    flushIntermediate();
+	// TODO use hashmap instead of tupple
+	if (!currentIntermediateHashmap.containsKey(key)){
+		// int totalKeyLength=0;
+		// int totalValueLength =0;
+		// for (HashMap.Entry<String, Integer> entry : currentIntermediateHashmap.entrySet()) {
+		// 		totalKeyLength += entry.getKey().length();
+		// 		totalValueLength += entry.getValue().toString().length();
+		// 	}
+		// currentIntermediateSize = totalKeyLength + totalValueLength;
+		// System.err.printf("%d keys: total key and val lengths %d, %d vs target %d\n",currentIntermediateHashmap.size() , totalKeyLength,totalValueLength, config.getIntermediateChunkSize());
+		if (currentIntermediateHashmap.size() >= 1024) {
+			flushIntermediate();
+		}
 	}
-
-	currentIntermediateTuples.add(new Tuple(key, value));
+	// currentIntermediateSize += key.length() + value.length();
+	currentIntermediateHashmap.merge(key,Integer.parseInt(value),Integer::sum);
+	// currentIntermediateTuples.add(new Tuple(key, value));
     }
 
     /**
@@ -338,13 +352,18 @@ public class MapReduce {
 	currentIntermediateFileNumber++;
 
 	try (BufferedWriter bw = new BufferedWriter(new FileWriter(fileName))) {
-	    for (int i = 0; i < currentIntermediateTuples.size(); i++) {
-		Tuple t = currentIntermediateTuples.get(i);
-		bw.write(t.key + "|" + t.value + "\n");
-	    }
+		for (HashMap.Entry<String,Integer> entry: currentIntermediateHashmap.entrySet()){
+			bw.write(entry.getKey() + "|" + entry.getValue() + "\n");
+			// System.err.println(entry.getKey() + "|" + entry.getValue() + "\n");
+		}
+	    // for (int i = 0; i < currentIntermediateTuples.size(); i++) {
+		// Tuple t = currentIntermediateTuples.get(i);
+		// bw.write(t.key + "|" + t.value + "\n");
+	    // }
 	} finally {
-	    currentIntermediateTuples.clear();
-	    currentIntermediateSize = 0;
+	    // currentIntermediateTuples.clear();
+	    // currentIntermediateSize = 0;
+		currentIntermediateHashmap.clear();
 	}
     }
 
