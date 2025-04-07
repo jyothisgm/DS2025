@@ -107,7 +107,7 @@ public class StubImpl implements StubInterface {
             mapQueue.offer(batch);
         }
 
-        System.out.println("Batched " + files.length + " files into " + mapQueue.size() + " batches.");
+        System.out.println(Util.getMyHostname()+" | Batched " + files.length + " files into " + mapQueue.size() + " batches.");
     }
 
     @Override

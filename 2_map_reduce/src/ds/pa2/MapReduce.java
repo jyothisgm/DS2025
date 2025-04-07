@@ -135,9 +135,9 @@ public class MapReduce {
 	long start, elapsed, totalTime = 0;
 	boolean isMapPhaseOver = false;
 	while (!isMapPhaseOver) {
-		logger.info("starting map phase");
 		start = System.nanoTime();
 		List<String> files = server.getMapJob(Util.getMyHostname());
+		logger.info(Util.getMyHostname() + " | starting map phase on: "+files);
 		if(!files.isEmpty()) {
 			runMapPhase(files);
 			server.mapJobCompleted(Util.getMyHostname());

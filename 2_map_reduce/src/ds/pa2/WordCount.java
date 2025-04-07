@@ -46,13 +46,13 @@ public final class WordCount implements MapReduceApplication {
 
 	private StubInterface connect() throws RemoteException, NotBoundException {
 		String host = Util.getCoordinatorHostname();
-		System.err.println("client connecting to " + host);
-		logger.info("Client connecting to " + host + " : Client on host " + Util.getMyHostname());
+		// System.err.println("client connecting to " + host);
+		logger.info(Util.getMyHostname()+" | Client connecting to " + host);
 
 		Registry registry = LocateRegistry.getRegistry(host, 1099);
-		logger.debug("Client connected to " + host + " : Client on host " + Util.getMyHostname());
+		logger.debug(Util.getMyHostname()+" | Client connected to " + host);
 		StubInterface server = (StubInterface) registry.lookup("NumServer");
-		logger.debug("Server stub recieved for " + host + " : Client on host " + Util.getMyHostname());
+		logger.debug(Util.getMyHostname()+" | Server stub received for " + host);
 		return server;
 	}
 
@@ -75,7 +75,7 @@ public final class WordCount implements MapReduceApplication {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			logger.info("The server should now be visible on the registry...");
+			logger.info(Util.getMyHostname()+" | The server node should now be visible on the registry...");
 			while (!serverImpl.getMapQueue().isEmpty()) {
 				try {
 					Thread.sleep(5000);
@@ -86,13 +86,14 @@ public final class WordCount implements MapReduceApplication {
 			}
 
 		} else {
-			logger.info("Client started on host " + Util.getMyHostname() + " master = " + Util.getCoordinatorHostname());
+			logger.info(Util.getMyHostname() + " | Client started and thinks master is: " + Util.getCoordinatorHostname());
 
 			StubInterface server = null;
 			while (Objects.isNull(server)) {
 				try {
+					Thread.sleep(1000);
 					server = connect();
-				} catch (RemoteException | NotBoundException e) {
+				} catch (RemoteException | NotBoundException | InterruptedException e) {
 					logger.warn(e.getMessage(), e);
 					try {
 						Thread.sleep(100);
