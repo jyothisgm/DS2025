@@ -76,8 +76,10 @@ public class StubImpl implements StubInterface {
 
     @Override
     public boolean isMapPhaseOver() throws RemoteException {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'isMapPhaseOver'");
+        if (!this.getMapQueue().isEmpty() || !this.getMapTakenList().isEmpty()) {
+            return false;
+        }
+        return true;
     }
 
     @Override
@@ -101,21 +103,22 @@ public class StubImpl implements StubInterface {
                     batch.clear();
                 }
             }
+            else{
+            System.out.println(Util.getMyHostname()+" | ignoring "+ file.getAbsolutePath());
+            }
         }
         // Add any remaining files that didn't complete a full batch
         if (!batch.isEmpty()) {
             mapQueue.offer(batch);
+            System.out.println(Util.getMyHostname()+" | last batch size "+ batch.size());
+            batch.clear();
         }
 
         System.out.println(Util.getMyHostname()+" | Batched " + files.length + " files into " + mapQueue.size() + " batches.");
     }
 
     @Override
-    public boolean mapJobCompleted(String hostname) throws RemoteException {
-        if (!this.getMapQueue().isEmpty() || !this.getMapTakenList().isEmpty()) {
-            return false;
-        }
-        return true;
+    public void mapJobCompleted(String hostname) throws RemoteException {
+        removeFromMapTakenList(hostname);
     }
-
 }
