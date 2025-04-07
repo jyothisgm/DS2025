@@ -27,6 +27,7 @@
 	    <javac srcdir="src"
 			destdir="build"
             includeantruntime="false"
+			encoding="UTF-8"
             debug="on"
             classpathref="default.classpath">
         </javac>

@@ -1,12 +1,18 @@
 package ds.pa2;
 
 import java.io.File;
+// import java.io.IOException;
+// import java.nio.file.Files;
+// import java.nio.file.Path;
+// import java.nio.file.Paths;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
+// import java.util.stream.Collectors;
+// import java.util.stream.Stream;
 
 
 /**
@@ -89,6 +95,30 @@ public class StubImpl implements StubInterface {
     }
 
     public void populateMapQueue(Config config) {
+        // String filedir = config.getInputDir();
+        // Path dir = Paths.get(filedir);
+        // List<String> batch = new ArrayList<>();
+        // int filecount =0;
+
+        // try(Stream<Path> paths = Files.list(dir)){
+        //     for (Path path: paths.collect(Collectors.toList())){
+        //         if (Files.isRegularFile(path)){
+        //             filecount++;
+        //             batch.add(path.toAbsolutePath().normalize().toString());
+        //             if (batch.size() == BATCH_SIZE){
+        //                 mapQueue.offer(new ArrayList<>(batch));
+        //                 batch.clear();
+        //             }
+        //         } else {
+        //             System.out.println(Util.getMyHostname()+" | last batch size "+ batch.size());
+        //         }
+        //     }
+
+        // } catch (IOException e) {
+        //     // TODO: handle exception
+        //     System.err.println("Error reading directory: " + e.getMessage());
+        // }
+
 		File[] files = new File(config.getInputDir()).listFiles();
         if (files == null || files.length == 0) {
             System.out.println("No files found in directory: " + config.getInputDir());
