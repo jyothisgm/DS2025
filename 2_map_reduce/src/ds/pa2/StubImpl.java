@@ -129,6 +129,7 @@ public class StubImpl implements StubInterface {
             if (file.isFile()) {
                 batch.add(file.getAbsolutePath());
                 if (batch.size() == BATCH_SIZE) {
+                    System.out.println(Util.getMyHostname()+" | new batch "+ batch);
                     mapQueue.offer(new ArrayList<>(batch));
                     batch.clear();
                 }
@@ -139,7 +140,8 @@ public class StubImpl implements StubInterface {
         }
         // Add any remaining files that didn't complete a full batch
         if (!batch.isEmpty()) {
-            mapQueue.offer(batch);
+            System.out.println(Util.getMyHostname()+" | last batch "+ batch);
+            mapQueue.offer(new ArrayList<>(batch));
             System.out.println(Util.getMyHostname()+" | last batch size "+ batch.size());
             batch.clear();
         }
