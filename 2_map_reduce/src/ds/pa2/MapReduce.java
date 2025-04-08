@@ -133,11 +133,12 @@ public class MapReduce {
 	}
 
 	long start, elapsed, totalTime = 0;
+	logger.info(Util.getMyHostname() +" | starting map phase");
 	boolean isMapPhaseOver = false;
 	while (!isMapPhaseOver) {
 		start = System.nanoTime();
 		List<String> files = server.getMapJob(Util.getMyHostname());
-		logger.info(Util.getMyHostname() + " | starting map phase on: "+files.size()+" books: "+files);
+		logger.info(Util.getMyHostname() + " | starting map job on: "+files.size()+" books: "+files);
 		if(!files.isEmpty()) {
 			runMapPhase(files);
 			server.mapJobCompleted(Util.getMyHostname());
@@ -145,17 +146,18 @@ public class MapReduce {
 		isMapPhaseOver = server.isMapPhaseOver();
 		elapsed = (System.nanoTime() - start) / 1000000;
 		totalTime += elapsed;
-		logger.info("map phase took: " + elapsed + " milliseconds.");
+		logger.info(Util.getMyHostname() + " | map job took: " + elapsed + " milliseconds.");
 	}
 
-	logger.info("starting reduce phase");
+	logger.info(Util.getMyHostname() + " | map phase took:" + totalTime + " milliseconds.");
+	logger.info(Util.getMyHostname() + " | starting reduce phase");
 	start = System.nanoTime();
 	runReducePhase();
 	elapsed = (System.nanoTime() - start) / 1000000;
 	totalTime += elapsed;
-	logger.info("reduce phase took: " + elapsed + " milliseconds.");
+	logger.info(Util.getMyHostname() + " | reduce phase took: " + elapsed + " milliseconds.");
 
-	logger.info("starting sequential post processing phase");
+	logger.info(Util.getMyHostname() + " | starting sequential post processing phase");
 	start = System.nanoTime();
 	runPostProcessingPhase();
 	elapsed = (System.nanoTime() - start) / 1000000;
