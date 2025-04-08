@@ -30,4 +30,6 @@ public interface StubInterface extends Remote {
     public boolean isReducePhaseOver() throws RemoteException;
 
     public void mapJobCompleted(String hostname) throws RemoteException;
+
+    public void reduceJobCompleted(String hostname) throws RemoteException;
 }

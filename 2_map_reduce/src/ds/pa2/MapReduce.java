@@ -150,11 +150,25 @@ public class MapReduce {
 	}
 
 	logger.info(Util.getMyHostname() + " | map phase took:" + totalTime + " milliseconds.");
+
 	logger.info(Util.getMyHostname() + " | starting reduce phase");
-	start = System.nanoTime();
-	runReducePhase();
-	elapsed = (System.nanoTime() - start) / 1000000;
-	totalTime += elapsed;
+	boolean isReducePhaseOver = false;
+
+	long red_start = System.nanoTime();
+	while (!isReducePhaseOver){
+		List<String> files = server.getReduceJob(Util.getMyHostname());
+		logger.info(Util.getMyHostname() + " | starting reduce job on: "+files.size()+" books: "+files);
+		start = System.nanoTime();
+		if (!files.isEmpty()){
+			runReducePhase(files);
+			server.reduceJobCompleted(Util.getMyHostname());
+		}
+		isReducePhaseOver = server.isReducePhaseOver();
+		elapsed = (System.nanoTime() - start) / 1000000;
+		totalTime += elapsed;
+		logger.info(Util.getMyHostname() + " | reduce job took: " + elapsed + " milliseconds.");
+	}
+	elapsed = (System.nanoTime() - red_start) / 1000000;
 	logger.info(Util.getMyHostname() + " | reduce phase took: " + elapsed + " milliseconds.");
 
 	logger.info(Util.getMyHostname() + " | starting sequential post processing phase");
@@ -282,13 +296,12 @@ public class MapReduce {
      * 
      * @throws IOException
      */
-    private void runReducePhase() throws IOException {
-	File[] files = new File(config.getIntermediateDir()).listFiles();
-	for (File f : files) {
-	    logger.debug("reducing file: " + f);
-	    reduceFile(f);
-	}
-
+    private void runReducePhase(List<String> files) throws IOException {
+	for (String filePath : files) {
+		logger.debug("reducing file: " + filePath);
+		File file = new File(filePath);
+		reduceFile(file);
+		}
 	flushOutput();
     }
 

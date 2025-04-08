@@ -48,7 +48,7 @@ public class StubImpl implements StubInterface {
 
 	private HashMap<String, List<String>> reduceTakenList = new HashMap<>();
 	public synchronized void removeFromReduceTakenList(String key) {
-		mapTakenList.remove(key);
+		reduceTakenList.remove(key);
 	}
 
     @Override
@@ -84,8 +84,10 @@ public class StubImpl implements StubInterface {
 
     @Override
     public boolean isReducePhaseOver() throws RemoteException {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'isReducePhaseOver'");
+        if (!this.getReduceQueue().isEmpty() || !this.getReduceTakenList().isEmpty()) {
+            return false;
+        }
+        return true;
     }
 
     public void populateMapQueue(Config config) {
@@ -119,8 +121,42 @@ public class StubImpl implements StubInterface {
         System.out.println(Util.getMyHostname()+" | Batched " + files.length + " files into " + mapQueue.size() + " batches.");
     }
 
+    public void populateReduceQeueue(Config config){
+        File[] files = new File(config.getIntermediateDir()).listFiles();
+        if (files == null || files.length == 0 ){
+            System.out.println(" No intermediate files found in directory" + config.getIntermediateDir());
+            return;
+        }
+        List<String> batch = new ArrayList<>();
+        for (File file : files) {
+            if (file.isFile()) {
+                batch.add(file.getAbsolutePath());
+                if (batch.size() == BATCH_SIZE) {
+                    System.out.println(Util.getMyHostname()+" | new batch "+ batch);
+                    mapQueue.offer(new ArrayList<>(batch));
+                    batch.clear();
+                }
+            }
+            else{
+            System.out.println(Util.getMyHostname()+" | ignoring "+ file.getAbsolutePath());
+            }
+        }
+        // Add any remaining files that didn't complete a full batch
+        if (!batch.isEmpty()) {
+            System.out.println(Util.getMyHostname()+" | last batch "+ batch);
+            mapQueue.offer(new ArrayList<>(batch));
+            System.out.println(Util.getMyHostname()+" | last batch size "+ batch.size());
+            batch.clear();
+        }
+
+        System.out.println(Util.getMyHostname()+" | Batched " + files.length + " intermediate files into " + mapQueue.size() + " batches.");
+    }
     @Override
     public void mapJobCompleted(String hostname) throws RemoteException {
         removeFromMapTakenList(hostname);
+    }
+    @Override
+    public void reduceJobCompleted(String hostname) throws RemoteException {
+        removeFromReduceTakenList(hostname);
     }
 }
