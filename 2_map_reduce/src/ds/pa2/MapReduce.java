@@ -151,6 +151,11 @@ public class MapReduce {
 
 	logger.info(Util.getMyHostname() + " | map phase took:" + totalTime + " milliseconds.");
 
+	// TODO BARRIER HERE so that workers stop but coordinator runs populateReduceQeueue
+	// then coordinator also joins barrier to reach capacity and break barrier
+	// this should also contain heartbeats so that the capacity is adjusted
+	// if coordinator fails then this will block...
+
 	logger.info(Util.getMyHostname() + " | starting reduce phase");
 	boolean isReducePhaseOver = false;
 

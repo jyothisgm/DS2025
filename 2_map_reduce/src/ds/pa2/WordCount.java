@@ -76,7 +76,7 @@ public final class WordCount implements MapReduceApplication {
 				e.printStackTrace();
 			}
 			logger.info(Util.getMyHostname()+" | The server node should now be visible on the registry...");
-			while (!serverImpl.getMapQueue().isEmpty()) {
+			while (!serverImpl.isMapPhaseOver()) {
 				try {
 					Thread.sleep(5000);
 				} catch (InterruptedException e) {
@@ -84,6 +84,19 @@ public final class WordCount implements MapReduceApplication {
 					e.printStackTrace();
 				}
 			}
+			serverImpl.populateReduceQeueue(this.mr.getConfig());
+			// JOIN BARRIER so that clients can start asking for work
+			serverImpl.barrier()
+			while(!serverImpl.isReducePhaseOver()){
+				try {
+					Thread.sleep(5000);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+			// perpaps have the coordinator do the postprocessing?
+			//
 
 		} else {
 			logger.info(Util.getMyHostname() + " | Client started and thinks master is: " + Util.getCoordinatorHostname());
