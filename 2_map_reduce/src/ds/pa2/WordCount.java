@@ -85,8 +85,6 @@ public final class WordCount implements MapReduceApplication {
 				}
 			}
 			serverImpl.populateReduceQeueue(this.mr.getConfig());
-			// JOIN BARRIER so that clients can start asking for work
-			serverImpl.barrier()
 			while(!serverImpl.isReducePhaseOver()){
 				try {
 					Thread.sleep(5000);

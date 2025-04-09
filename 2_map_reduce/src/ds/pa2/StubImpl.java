@@ -18,6 +18,7 @@ import java.util.Queue;
 public class StubImpl implements StubInterface {
     private int BATCH_SIZE = 32;
     private Queue<List<String>> mapQueue = new LinkedList<>();
+    private boolean populateReduceQueueDone = false;
 
 
     public synchronized Queue<List<String>> getMapQueue() {
@@ -76,7 +77,7 @@ public class StubImpl implements StubInterface {
 
     @Override
     public boolean isMapPhaseOver() throws RemoteException {
-        if (!this.getMapQueue().isEmpty() || !this.getMapTakenList().isEmpty()) {
+        if (!this.getMapQueue().isEmpty() || !this.getMapTakenList().isEmpty()|| !this.populateReduceQueueDone) {
             return false;
         }
         return true;
@@ -148,7 +149,7 @@ public class StubImpl implements StubInterface {
             System.out.println(Util.getMyHostname()+" | last batch size "+ batch.size());
             batch.clear();
         }
-
+        this.populateReduceQueueDone = true;
         System.out.println(Util.getMyHostname()+" | Batched " + files.length + " intermediate files into " + mapQueue.size() + " batches.");
     }
     @Override
