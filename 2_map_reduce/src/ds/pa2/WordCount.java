@@ -76,7 +76,7 @@ public final class WordCount implements MapReduceApplication {
 				e.printStackTrace();
 			}
 			logger.info(Util.getMyHostname()+" | The server node should now be visible on the registry...");
-			while (!serverImpl.isMapPhaseOver()) {
+			while (!serverImpl.isTimePopulateReduce()) {
 				try {
 					Thread.sleep(5000);
 				} catch (InterruptedException e) {

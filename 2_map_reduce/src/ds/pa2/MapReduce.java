@@ -137,16 +137,27 @@ public class MapReduce {
 	boolean isMapPhaseOver = false;
 	while (!isMapPhaseOver) {
 		start = System.nanoTime();
+		logger.info(Util.getMyHostname() + " | asking for work");
 		List<String> files = server.getMapJob(Util.getMyHostname());
 		logger.info(Util.getMyHostname() + " | starting map job on: "+files.size()+" books: "+files);
 		if(!files.isEmpty()) {
 			runMapPhase(files);
+			logger.info(Util.getMyHostname() + " | contacting server"); 
 			server.mapJobCompleted(Util.getMyHostname());
+			logger.info(Util.getMyHostname() + " | notified server"); 
+		}else{
+			try { logger.info(Util.getMyHostname() + " | sleeping for 1 sec");
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 		isMapPhaseOver = server.isMapPhaseOver();
 		elapsed = (System.nanoTime() - start) / 1000000;
 		totalTime += elapsed;
 		logger.info(Util.getMyHostname() + " | map job took: " + elapsed + " milliseconds.");
+		logger.info(Util.getMyHostname() + " | is map phase over?: "+isMapPhaseOver);
 	}
 
 	logger.info(Util.getMyHostname() + " | map phase took:" + totalTime + " milliseconds.");
