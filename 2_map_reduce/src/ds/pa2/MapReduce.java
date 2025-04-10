@@ -133,7 +133,7 @@ public class MapReduce {
 	}
 
 	long start, elapsed, totalTime = 0;
-	logger.info(this.name +" | starting map phase");
+	// logger.info(this.name +" | starting map phase");
 	boolean isMapPhaseOver = false;
 	while (!isMapPhaseOver) {
 		start = System.nanoTime();
@@ -146,7 +146,8 @@ public class MapReduce {
 			server.mapJobCompleted(this.name);
 			// logger.info(this.name + " | notified server"); 
 		}else{
-			try { logger.info(this.name + " | sleeping  after map for 1 sec");
+			try {
+				// logger.info(this.name + " | sleeping  after map for 1 sec");
 				Thread.sleep(1000);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
@@ -167,7 +168,7 @@ public class MapReduce {
 	// this should also contain heartbeats so that the capacity is adjusted
 	// if coordinator fails then this will block...
 
-	logger.info(this.name + " | starting reduce phase");
+	// logger.info(this.name + " | starting reduce phase");
 	boolean isReducePhaseOver = false;
 
 	long red_start = System.nanoTime();
@@ -182,7 +183,8 @@ public class MapReduce {
 			server.reduceJobCompleted(this.name);
 			// logger.info(this.name + " | notified server"); 
 		}else{
-			try { logger.info(this.name + " | sleeping after reduce for 1 sec");
+			try { 
+				// logger.info(this.name + " | sleeping after reduce for 1 sec");
 				Thread.sleep(1000);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
@@ -197,10 +199,11 @@ public class MapReduce {
 	elapsed = (System.nanoTime() - red_start) / 1000000;
 	logger.info(this.name + " | reduce phase took: " + elapsed + " milliseconds.");
 
-	logger.info("total application time is: " + totalTime + " milliseconds.");
+	logger.info(this.name + " | total application time is: " + totalTime + " milliseconds.");
 	boolean isPostProcessingOver = server.isPostProcessingOver();
 	while (!isPostProcessingOver){
-			try { logger.info(this.name + " | waiting for postprocessing to finish for 1 sec");
+			try { 
+				// logger.info(this.name + " | waiting for postprocessing to finish for 1 sec");
 				Thread.sleep(1000);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block

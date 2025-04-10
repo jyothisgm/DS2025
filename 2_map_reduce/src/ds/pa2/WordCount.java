@@ -78,8 +78,8 @@ public final class WordCount implements MapReduceApplication {
 			logger.info(Util.getMyHostname()+" | The server node should now be visible on the registry...");
 			while (!serverImpl.isTimePopulateReduce()) {
 				try {
-					logger.info(this.mr.name + " | Sleeping for map phase");
-					Thread.sleep(5000);
+					// logger.info(this.mr.name + " | Sleeping for map phase");
+					Thread.sleep(50);
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -88,8 +88,8 @@ public final class WordCount implements MapReduceApplication {
 			serverImpl.populateReduceQeueue(this.mr.getConfig());
 			while(!serverImpl.isReducePhaseOver()){
 				try {
-					logger.info(this.mr.name + " | Sleeping for reduce phase");
-					Thread.sleep(5000);
+					// logger.info(this.mr.name + " | Sleeping for reduce phase");
+					Thread.sleep(50);
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
