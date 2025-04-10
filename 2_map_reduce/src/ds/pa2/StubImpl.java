@@ -19,7 +19,7 @@ public class StubImpl implements StubInterface {
     private int BATCH_SIZE = 32;
     private Queue<List<String>> mapQueue = new LinkedList<>();
     private boolean populateReduceQueueDone = false;
-
+    private String name = Util.getMyHostname();
 
     public synchronized Queue<List<String>> getMapQueue() {
 		return mapQueue;
@@ -84,6 +84,8 @@ public class StubImpl implements StubInterface {
     @Override
     public boolean isMapPhaseOver() throws RemoteException {
         if (!this.getMapQueue().isEmpty() || !this.getMapTakenList().isEmpty()|| !this.populateReduceQueueDone) {
+            System.out.println(this.name + " | Map phase not done");
+            System.out.println(this.name + " | " + this.getMapQueue().size() + "," + this.getMapTakenList().size() + "," + this.populateReduceQueueDone);
             return false;
         }
         return true;
@@ -105,7 +107,7 @@ public class StubImpl implements StubInterface {
 
     public void populateMapQueue(Config config) {
 		File[] files = new File(config.getInputDir()).listFiles();
-        System.out.println(Util.getMyHostname()+" | populating Map Queue...");
+        System.out.println(this.name+" | populating Map Queue...");
         if (files == null || files.length == 0) {
             System.out.println("No files found in directory: " + config.getInputDir());
             return;
@@ -115,28 +117,28 @@ public class StubImpl implements StubInterface {
             if (file.isFile()) {
                 batch.add(file.getAbsolutePath());
                 if (batch.size() == BATCH_SIZE) {
-                    // System.out.println(Util.getMyHostname()+" | new batch "+ batch);
+                    // System.out.println(this.name+" | new batch "+ batch);
                     mapQueue.offer(new ArrayList<>(batch));
                     batch.clear();
                 }
             }
             else{
-            System.out.println(Util.getMyHostname()+" | ignoring "+ file.getAbsolutePath());
+            System.out.println(this.name+" | ignoring "+ file.getAbsolutePath());
             }
         }
         // Add any remaining files that didn't complete a full batch
         if (!batch.isEmpty()) {
-            System.out.println(Util.getMyHostname()+" | last batch "+ batch);
+            System.out.println(this.name+" | last batch "+ batch);
             mapQueue.offer(new ArrayList<>(batch));
-            System.out.println(Util.getMyHostname()+" | last batch size "+ batch.size());
+            System.out.println(this.name+" | last batch size "+ batch.size());
             batch.clear();
         }
 
-        System.out.println(Util.getMyHostname()+" | Batched " + files.length + " files into " + mapQueue.size() + " batches.");
+        System.out.println(this.name+" | Batched " + files.length + " files into " + mapQueue.size() + " batches.");
     }
 
     public void populateReduceQeueue(Config config){
-        System.out.println(Util.getMyHostname()+" | populating Reduce Queue...");
+        System.out.println(this.name+" | populating Reduce Queue...");
         File[] files = new File(config.getIntermediateDir()).listFiles();
         if (files == null || files.length == 0 ){
             System.out.println(" No intermediate files found in directory" + config.getIntermediateDir());
@@ -147,24 +149,24 @@ public class StubImpl implements StubInterface {
             if (file.isFile()) {
                 batch.add(file.getAbsolutePath());
                 if (batch.size() == BATCH_SIZE) {
-                    System.out.println(Util.getMyHostname()+" | new batch "+ batch);
+                    System.out.println(this.name+" | new batch "+ batch);
                     reduceQueue.offer(new ArrayList<>(batch));
                     batch.clear();
                 }
             }
             else{
-            System.out.println(Util.getMyHostname()+" | ignoring "+ file.getAbsolutePath());
+            System.out.println(this.name+" | ignoring "+ file.getAbsolutePath());
             }
         }
         // Add any remaining files that didn't complete a full batch
         if (!batch.isEmpty()) {
-            // System.out.println(Util.getMyHostname()+" | last batch "+ batch);
+            // System.out.println(this.name+" | last batch "+ batch);
             reduceQueue.offer(new ArrayList<>(batch));
-            // System.out.println(Util.getMyHostname()+" | last batch size "+ batch.size());
+            // System.out.println(this.name+" | last batch size "+ batch.size());
             batch.clear();
         }
         this.populateReduceQueueDone = true;
-        System.out.println(Util.getMyHostname()+" | Batched " + files.length + " intermediate files into " + reduceQueue.size() + " batches.");
+        System.out.println(this.name+" | Batched " + files.length + " intermediate files into " + reduceQueue.size() + " batches.");
     }
     @Override
     public void mapJobCompleted(String hostname) throws RemoteException {
