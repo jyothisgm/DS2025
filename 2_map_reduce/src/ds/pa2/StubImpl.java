@@ -57,8 +57,11 @@ public class StubImpl implements StubInterface {
 
     @Override
 	public synchronized List<String> getReduceJob(String key) throws RemoteException{
-		List<String> reduceTaken = reduceQueue.poll();
-		this.reduceTakenList.put(key, reduceTaken);
+        List<String> reduceTaken = List.<String>of();
+        if (!this.getReduceQueue().isEmpty()) {
+		reduceTaken = mapQueue.poll();
+		this.mapTakenList.put(key, reduceTaken);
+        }
 		return reduceTaken;
 	}
 

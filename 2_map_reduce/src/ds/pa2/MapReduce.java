@@ -178,6 +178,13 @@ public class MapReduce {
 		if (!files.isEmpty()){
 			runReducePhase(files);
 			server.reduceJobCompleted(Util.getMyHostname());
+		}else{
+			try { logger.info(Util.getMyHostname() + " | sleeping for 1 sec");
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 		isReducePhaseOver = server.isReducePhaseOver();
 		elapsed = (System.nanoTime() - start) / 1000000;
