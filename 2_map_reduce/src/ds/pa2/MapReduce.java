@@ -394,7 +394,7 @@ public class MapReduce {
 	int myOutputFileNumber = currentOutputFileNumber;
 	currentOutputFileNumber++;
 
-	String fileName = config.getOutputDir() + File.separator + "output" + myOutputFileNumber + ".txt";
+	String fileName = config.getOutputDir() + File.separator + this.name + "_output" + myOutputFileNumber + ".txt";
 	File out = new File(fileName);
 
 	File tmpFile = File.createTempFile("tempOutput_" + myOutputFileNumber, ".txt", new File(config.getOutputDir()));
