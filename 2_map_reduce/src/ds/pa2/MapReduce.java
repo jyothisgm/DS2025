@@ -133,7 +133,7 @@ public class MapReduce {
 	}
 
 	long start, elapsed, totalTime = 0;
-	// logger.info(this.name +" | starting map phase");
+	logger.info(this.name +" | starting map phase");
 	boolean isMapPhaseOver = false;
 	while (!isMapPhaseOver) {
 		start = System.nanoTime();
@@ -192,7 +192,7 @@ public class MapReduce {
 		isReducePhaseOver = server.isReducePhaseOver();
 		elapsed = (System.nanoTime() - start) / 1000000;
 		totalTime += elapsed;
-		logger.info(this.name + " | reduce job took: " + elapsed + " milliseconds.");
+		// logger.info(this.name + " | reduce job took: " + elapsed + " milliseconds.");
 	}
 	elapsed = (System.nanoTime() - red_start) / 1000000;
 	logger.info(this.name + " | reduce phase took: " + elapsed + " milliseconds.");

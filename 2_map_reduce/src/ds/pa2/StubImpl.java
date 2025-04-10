@@ -100,8 +100,8 @@ public class StubImpl implements StubInterface {
     @Override
     public boolean isReducePhaseOver() throws RemoteException {
         if (!this.getReduceQueue().isEmpty() || !this.getReduceTakenList().isEmpty()) {
-            System.out.println(this.name + " | Reduce phase not done");
-            System.out.println(this.name + " | " + this.getReduceQueue().size() + "," + this.getReduceTakenList().size() );
+            // System.out.println(this.name + " | Reduce phase not done");
+            // System.out.println(this.name + " | " + this.getReduceQueue().size() + "," + this.getReduceTakenList().size() );
             return false;
         }
         return true;
