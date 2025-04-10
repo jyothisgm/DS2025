@@ -60,7 +60,7 @@ public class StubImpl implements StubInterface {
         List<String> reduceTaken = List.<String>of();
         if (!this.getReduceQueue().isEmpty()) {
 		reduceTaken = mapQueue.poll();
-		this.mapTakenList.put(key, reduceTaken);
+		this.reduceTakenList.put(key, reduceTaken);
         }
 		return reduceTaken;
 	}
