@@ -172,9 +172,9 @@ public class MapReduce {
 
 	long red_start = System.nanoTime();
 	while (!isReducePhaseOver){
-		logger.info(this.name + " | asking for work");
+		// logger.info(this.name + " | asking for work");
 		List<String> files = server.getReduceJob(this.name);
-		logger.info(this.name + " | starting reduce job on: "+files.size()+" books: "+files);
+		// logger.info(this.name + " | starting reduce job on: "+files.size()+" books: "+files);
 		start = System.nanoTime();
 		if (!files.isEmpty()){
 			runReducePhase(files);
@@ -196,13 +196,6 @@ public class MapReduce {
 	}
 	elapsed = (System.nanoTime() - red_start) / 1000000;
 	logger.info(this.name + " | reduce phase took: " + elapsed + " milliseconds.");
-
-	logger.info(this.name + " | starting sequential post processing phase");
-	start = System.nanoTime();
-	runPostProcessingPhase();
-	elapsed = (System.nanoTime() - start) / 1000000;
-	totalTime += elapsed;
-	logger.info("post processing phase took: " + elapsed + " milliseconds.");
 
 	logger.info("total application time is: " + totalTime + " milliseconds.");
     }
@@ -429,7 +422,7 @@ public class MapReduce {
      * 
      * @throws IOException
      */
-    private void runPostProcessingPhase() throws IOException {
+    public void runPostProcessingPhase() throws IOException {
 	File[] files = new File(config.getOutputDir()).listFiles();
 
 	for (File f : files) {

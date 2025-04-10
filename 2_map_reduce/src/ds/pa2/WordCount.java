@@ -95,8 +95,12 @@ public final class WordCount implements MapReduceApplication {
 					e.printStackTrace();
 				}
 			}
-			// perpaps have the coordinator do the postprocessing?
-			//
+
+			logger.info(this.mr.name + " | starting sequential post processing phase");
+			long start = System.nanoTime();
+			this.mr.runPostProcessingPhase();
+			long elapsed = (System.nanoTime() - start) / 1000000;
+			logger.info("post processing phase took: " + elapsed + " milliseconds.");
 
 		} else {
 			logger.info(Util.getMyHostname() + " | Client started and thinks master is: " + Util.getCoordinatorHostname());
