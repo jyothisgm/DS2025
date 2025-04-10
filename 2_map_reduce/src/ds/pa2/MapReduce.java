@@ -41,7 +41,7 @@ public class MapReduce {
     private int currentOutputFileNumber = 0;
     private int currentOutputSize = 0;
     private final ArrayList<Tuple> currentOutputTuples = new ArrayList<Tuple>();
-
+	private String name = Util.getMyHostname();
     /**
      * A treeMap is sorted. This is very useful for checking whether the output is
      * correct. Some steps can be non-deterministic, so the order of key/value pairs
@@ -133,20 +133,20 @@ public class MapReduce {
 	}
 
 	long start, elapsed, totalTime = 0;
-	logger.info(Util.getMyHostname() +" | starting map phase");
+	logger.info(this.name +" | starting map phase");
 	boolean isMapPhaseOver = false;
 	while (!isMapPhaseOver) {
 		start = System.nanoTime();
-		logger.info(Util.getMyHostname() + " | asking for work");
-		List<String> files = server.getMapJob(Util.getMyHostname());
-		logger.info(Util.getMyHostname() + " | starting map job on: "+files.size()+" books: "+files);
+		logger.info(this.name + " | asking for work");
+		List<String> files = server.getMapJob(this.name);
+		logger.info(this.name + " | starting map job on: "+files.size()+" books: "+files);
 		if(!files.isEmpty()) {
 			runMapPhase(files);
-			logger.info(Util.getMyHostname() + " | contacting server"); 
-			server.mapJobCompleted(Util.getMyHostname());
-			logger.info(Util.getMyHostname() + " | notified server"); 
+			logger.info(this.name + " | contacting server"); 
+			server.mapJobCompleted(this.name);
+			logger.info(this.name + " | notified server"); 
 		}else{
-			try { logger.info(Util.getMyHostname() + " | sleeping for 1 sec");
+			try { logger.info(this.name + " | sleeping for 1 sec");
 				Thread.sleep(1000);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
@@ -156,30 +156,30 @@ public class MapReduce {
 		isMapPhaseOver = server.isMapPhaseOver();
 		elapsed = (System.nanoTime() - start) / 1000000;
 		totalTime += elapsed;
-		logger.info(Util.getMyHostname() + " | map job took: " + elapsed + " milliseconds.");
-		logger.info(Util.getMyHostname() + " | is map phase over?: "+isMapPhaseOver);
+		logger.info(this.name + " | map job took: " + elapsed + " milliseconds.");
+		logger.info(this.name + " | is map phase over?: "+isMapPhaseOver);
 	}
 
-	logger.info(Util.getMyHostname() + " | map phase took:" + totalTime + " milliseconds.");
+	logger.info(this.name + " | map phase took:" + totalTime + " milliseconds.");
 
 	// TODO BARRIER HERE so that workers stop but coordinator runs populateReduceQeueue
 	// then coordinator also joins barrier to reach capacity and break barrier
 	// this should also contain heartbeats so that the capacity is adjusted
 	// if coordinator fails then this will block...
 
-	logger.info(Util.getMyHostname() + " | starting reduce phase");
+	logger.info(this.name + " | starting reduce phase");
 	boolean isReducePhaseOver = false;
 
 	long red_start = System.nanoTime();
 	while (!isReducePhaseOver){
-		List<String> files = server.getReduceJob(Util.getMyHostname());
-		logger.info(Util.getMyHostname() + " | starting reduce job on: "+files.size()+" books: "+files);
+		List<String> files = server.getReduceJob(this.name);
+		logger.info(this.name + " | starting reduce job on: "+files.size()+" books: "+files);
 		start = System.nanoTime();
 		if (!files.isEmpty()){
 			runReducePhase(files);
-			server.reduceJobCompleted(Util.getMyHostname());
+			server.reduceJobCompleted(this.name);
 		}else{
-			try { logger.info(Util.getMyHostname() + " | sleeping for 1 sec");
+			try { logger.info(this.name + " | sleeping for 1 sec");
 				Thread.sleep(1000);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
@@ -189,12 +189,12 @@ public class MapReduce {
 		isReducePhaseOver = server.isReducePhaseOver();
 		elapsed = (System.nanoTime() - start) / 1000000;
 		totalTime += elapsed;
-		logger.info(Util.getMyHostname() + " | reduce job took: " + elapsed + " milliseconds.");
+		logger.info(this.name + " | reduce job took: " + elapsed + " milliseconds.");
 	}
 	elapsed = (System.nanoTime() - red_start) / 1000000;
-	logger.info(Util.getMyHostname() + " | reduce phase took: " + elapsed + " milliseconds.");
+	logger.info(this.name + " | reduce phase took: " + elapsed + " milliseconds.");
 
-	logger.info(Util.getMyHostname() + " | starting sequential post processing phase");
+	logger.info(this.name + " | starting sequential post processing phase");
 	start = System.nanoTime();
 	runPostProcessingPhase();
 	elapsed = (System.nanoTime() - start) / 1000000;
@@ -370,7 +370,7 @@ public class MapReduce {
      * @throws IOException
      */
     private void flushIntermediate() throws IOException {
-	String fileName = config.getIntermediateDir() + File.separator + "intermediate" + currentIntermediateFileNumber
+	String fileName = config.getIntermediateDir() + File.separator + this.name+ "_intermediate" + currentIntermediateFileNumber
 		+ ".txt";
 	logger.debug("Flush intermediate: " + fileName);
 	currentIntermediateFileNumber++;
