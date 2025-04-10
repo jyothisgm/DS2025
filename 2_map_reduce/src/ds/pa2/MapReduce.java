@@ -12,7 +12,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.TreeMap;
 
 import org.slf4j.Logger;
@@ -37,14 +36,14 @@ public class MapReduce {
 	private static MapReduceApplication userApplication;
 
     private int currentIntermediateFileNumber = 0;
-    private int currentIntermediateSize = 0;
-    private final ArrayList<Tuple> currentIntermediateTuples = new ArrayList<Tuple>();
+    // private int currentIntermediateSize = 0;
+    // private final ArrayList<Tuple> currentIntermediateTuples = new ArrayList<Tuple>();
 	private final HashMap<String,Integer> currentIntermediateHashmap = new HashMap<String,Integer>(); 
 
     private int currentOutputFileNumber = 0;
     private int currentOutputSize = 0;
     private final ArrayList<Tuple> currentOutputTuples = new ArrayList<Tuple>();
-
+	public String name = Util.getMyHostname();
     /**
      * A treeMap is sorted. This is very useful for checking whether the output is
      * correct. Some steps can be non-deterministic, so the order of key/value pairs
@@ -135,40 +134,87 @@ public class MapReduce {
 		    "You forgot to provide a Config to mapReduce via the method configure()");
 	}
 
-	long map_start,start, elapsed, totalTime = 0;
-	logger.info(Util.getMyHostname() +" | starting map phase");
-	boolean isMapPhaseOver = false;
-	map_start = System.nanoTime();
-	while (!isMapPhaseOver) {
+	long start, elapsed, totalTime = 0;
+	logger.info(this.name + " | starting map phase");
+	boolean isMapPhaseDone = false;
+	while (!isMapPhaseDone) {
 		start = System.nanoTime();
-		List<String> files = server.getMapJob(Util.getMyHostname());
-		logger.info(Util.getMyHostname() + " | starting map job on: "+files.size()+" books: "+files);
+		logger.debug(this.name + " | asking for work");
+		List<String> files = server.getMapJob(this.name);
 		if(!files.isEmpty()) {
+			logger.info(this.name + " | starting map job on: "+files.size()+" books: "+files);
 			runMapPhase(files);
-			server.mapJobCompleted(Util.getMyHostname());
+			logger.debug(this.name + " | contacting server"); 
+			server.mapJobCompleted(this.name);
+			logger.debug(this.name + " | notified server"); 
+
+			elapsed = (System.nanoTime() - start) / 1000000;
+			totalTime += elapsed;
+			logger.info(this.name + " | map job took: " + elapsed + " milliseconds.");
+		} else {
+			try {
+				logger.debug(this.name + " | sleeping after reduce for 100 milliseconds");
+				Thread.sleep(100);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
-		isMapPhaseOver = server.isMapPhaseOver();
-		elapsed = (System.nanoTime() - start) / 1000000;
-		totalTime += elapsed;
-		logger.info(Util.getMyHostname() + " | map job took: " + elapsed + " milliseconds.");
+		isMapPhaseDone = server.isMapPhaseDone();
+		logger.debug(this.name + " | Is map phase done?: " + isMapPhaseDone);
 	}
 
-	logger.info(Util.getMyHostname() + " | map phase took:" + totalTime + " milliseconds.");
-	logger.info(Util.getMyHostname() + " | starting reduce phase");
-	start = System.nanoTime();
-	runReducePhase();
-	elapsed = (System.nanoTime() - start) / 1000000;
-	totalTime += elapsed;
-	logger.info(Util.getMyHostname() + " | reduce phase took: " + elapsed + " milliseconds.");
+	logger.info(this.name + " | map phase took:" + totalTime + " milliseconds.");
 
-	logger.info(Util.getMyHostname() + " | starting sequential post processing phase");
-	start = System.nanoTime();
-	runPostProcessingPhase();
-	elapsed = (System.nanoTime() - start) / 1000000;
-	totalTime += elapsed;
-	logger.info("post processing phase took: " + elapsed + " milliseconds.");
+	// TODO BARRIER HERE so that workers stop but coordinator runs populateReduceQeueue
+	// then coordinator also joins barrier to reach capacity and break barrier
+	// this should also contain heartbeats so that the capacity is adjusted
+	// if coordinator fails then this will block...
 
-	logger.info("total application time is: " + totalTime + " milliseconds.");
+	logger.info(this.name + " | starting reduce phase");
+	boolean isReducePhaseDone = false;
+
+	// long red_start = System.nanoTime();
+	while (!isReducePhaseDone){
+		logger.debug(this.name + " | asking for work");
+		List<String> files = server.getReduceJob(this.name);
+		start = System.nanoTime();
+		if (!files.isEmpty()){
+			logger.info(this.name + " | starting reduce job on: "+files.size()+" books: "+files);
+			runReducePhase(files);
+			logger.debug(this.name + " | contacting server"); 
+			server.reduceJobCompleted(this.name);
+			logger.debug(this.name + " | notified server"); 
+
+			elapsed = (System.nanoTime() - start) / 1000000;
+			totalTime += elapsed;
+			logger.info(this.name + " | reduce job took: " + elapsed + " milliseconds.");
+		} else {
+			try { 
+				logger.debug(this.name + " | sleeping after reduce for 100 milliseconds");
+				Thread.sleep(100);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		isReducePhaseDone = server.isReducePhaseDone();
+	}
+	// elapsed = (System.nanoTime() - red_start) / 1000000;
+	// logger.info(this.name + " | reduce phase took: " + elapsed + " milliseconds.");
+
+	logger.info(this.name + " | total application time is: " + totalTime + " milliseconds.");
+	// boolean isPostProcessingDone = server.isPostProcessingDone();
+	// while (!isPostProcessingDone) {
+	// 	try { 
+	// 		logger.trace(this.name + " | waiting for postprocessing to finish for 1 sec");
+	// 		Thread.sleep(1000);
+	// 	} catch (InterruptedException e) {
+	// 		// TODO Auto-generated catch block
+	// 		e.printStackTrace();
+	// 	}
+	// 	isPostProcessingDone = server.isPostProcessingDone();
+	// }
     }
 
     /**
@@ -279,7 +325,7 @@ public class MapReduce {
      */
     private void runMapPhase(List<String> files) throws IOException {
 	for (String filePath : files) {
-	    logger.debug("mapping file: " + filePath);
+	    logger.trace("mapping file: " + filePath);
 		File file = new File(filePath);
 	    try (BufferedReader in = new BufferedReader(new FileReader(file))) {
 			List<String> allLines = Arrays.asList(in.lines().toArray(String[]::new));
@@ -297,13 +343,12 @@ public class MapReduce {
      * 
      * @throws IOException
      */
-    private void runReducePhase() throws IOException {
-	File[] files = new File(config.getIntermediateDir()).listFiles();
-	for (File f : files) {
-	    logger.debug("reducing file: " + f);
-	    reduceFile(f);
-	}
-
+    private void runReducePhase(List<String> files) throws IOException {
+	for (String filePath : files) {
+		logger.trace("reducing file: " + filePath);
+		File file = new File(filePath);
+		reduceFile(file);
+		}
 	flushOutput();
     }
 
@@ -349,9 +394,9 @@ public class MapReduce {
      * @throws IOException
      */
     private void flushIntermediate() throws IOException {
-	String fileName = config.getIntermediateDir() + File.separator + "intermediate" + currentIntermediateFileNumber
+	String fileName = config.getIntermediateDir() + File.separator + this.name+ "_intermediate" + currentIntermediateFileNumber
 		+ ".txt";
-	logger.debug("Flush intermediate: " + fileName);
+	logger.trace("Flush intermediate: " + fileName);
 	currentIntermediateFileNumber++;
 
 	try (BufferedWriter bw = new BufferedWriter(new FileWriter(fileName))) {
@@ -382,11 +427,11 @@ public class MapReduce {
 	int myOutputFileNumber = currentOutputFileNumber;
 	currentOutputFileNumber++;
 
-	String fileName = config.getOutputDir() + File.separator + "output" + myOutputFileNumber + ".txt";
+	String fileName = config.getOutputDir() + File.separator + this.name + "_output" + myOutputFileNumber + ".txt";
 	File out = new File(fileName);
 
 	File tmpFile = File.createTempFile("tempOutput_" + myOutputFileNumber, ".txt", new File(config.getOutputDir()));
-	logger.debug("Flush output: " + myOutputFileNumber + ": using temp file: " + tmpFile.getName());
+	logger.trace("Flush output: " + myOutputFileNumber + ": using temp file: " + tmpFile.getName());
 
 	try (BufferedWriter bw = new BufferedWriter(new FileWriter(tmpFile))) {
 	    for (int i = 0; i < currentOutputTuples.size(); i++) {
@@ -398,7 +443,7 @@ public class MapReduce {
 	    currentOutputSize = 0;
 	}
 
-	logger.debug("Rename temp output " + tmpFile.getName() + " to output: " + fileName);
+	logger.trace("Rename temp output " + tmpFile.getName() + " to output: " + fileName);
 
 	java.nio.file.Files.move(tmpFile.toPath(), out.toPath(), StandardCopyOption.ATOMIC_MOVE);
     }
@@ -410,11 +455,11 @@ public class MapReduce {
      * 
      * @throws IOException
      */
-    private void runPostProcessingPhase() throws IOException {
+    public void runPostProcessingPhase() throws IOException {
 	File[] files = new File(config.getOutputDir()).listFiles();
 
 	for (File f : files) {
-	    logger.debug("post processing file: " + f);
+	    logger.trace("post processing file: " + f);
 
 	    try (BufferedReader in = new BufferedReader(new FileReader(f))) {
 		String[] allLines = in.lines().toArray(String[]::new);
@@ -438,7 +483,7 @@ public class MapReduce {
 	File out = new File(fileName);
 
 	File tmpFile = File.createTempFile("finalOutput_", ".txt", new File(config.getOutputDir()));
-	logger.debug("writing final output");
+	logger.trace("writing final output");
 
 	try (BufferedWriter bw = new BufferedWriter(new FileWriter(tmpFile))) {
 	    for (String key : postProcessingMap.keySet()) {
@@ -446,7 +491,7 @@ public class MapReduce {
 	    }
 	}
 
-	logger.debug("Rename temp output " + tmpFile.getName() + " to output: " + fileName);
+	logger.info("Rename temp output " + tmpFile.getName() + " to output: " + fileName);
 	java.nio.file.Files.move(tmpFile.toPath(), out.toPath(), StandardCopyOption.ATOMIC_MOVE);
     }
 

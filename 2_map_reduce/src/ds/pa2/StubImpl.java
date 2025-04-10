@@ -1,18 +1,12 @@
 package ds.pa2;
 
 import java.io.File;
-// import java.io.IOException;
-// import java.nio.file.Files;
-// import java.nio.file.Path;
-// import java.nio.file.Paths;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
-// import java.util.stream.Collectors;
-// import java.util.stream.Stream;
 
 
 /**
@@ -24,7 +18,11 @@ import java.util.Queue;
 public class StubImpl implements StubInterface {
     private int BATCH_SIZE = 32;
     private Queue<List<String>> mapQueue = new LinkedList<>();
+    private boolean mapPhaseDone = false;
+    private boolean reducePhaseDone = false;
 
+    private boolean postProcessingDone = false;
+    private String name = Util.getMyHostname();
 
     public synchronized Queue<List<String>> getMapQueue() {
 		return mapQueue;
@@ -34,14 +32,21 @@ public class StubImpl implements StubInterface {
 
     @Override
 	public synchronized List<String> getMapJob(String key) throws RemoteException {
-		List<String> mapTaken = mapQueue.poll();
+        List<String> mapTaken = List.<String>of();
+        if (!this.getMapQueue().isEmpty()) {
+		mapTaken = mapQueue.poll();
 		this.mapTakenList.put(key, mapTaken);
+        }
 		return mapTaken;
 	}
 
 	public synchronized HashMap<String, List<String>> getMapTakenList() {
 		return mapTakenList;
 	}
+
+    public void setMapPhaseDone() {
+        this.mapPhaseDone = true;
+    }
 
 	public synchronized void removeFromMapTakenList(String key) {
 		mapTakenList.remove(key);
@@ -54,19 +59,26 @@ public class StubImpl implements StubInterface {
 
 	private HashMap<String, List<String>> reduceTakenList = new HashMap<>();
 	public synchronized void removeFromReduceTakenList(String key) {
-		mapTakenList.remove(key);
+		reduceTakenList.remove(key);
 	}
 
     @Override
 	public synchronized List<String> getReduceJob(String key) throws RemoteException{
-		List<String> reduceTaken = reduceQueue.poll();
-		this.reduceTakenList.put(key, reduceTaken);
+        List<String> reduceTaken = List.<String>of();
+        if (!this.getReduceQueue().isEmpty()) {
+            reduceTaken = reduceQueue.poll();
+            this.reduceTakenList.put(key, reduceTaken);
+        }
 		return reduceTaken;
 	}
 
 	public synchronized HashMap<String, List<String>> getReduceTakenList() {
 		return reduceTakenList;
 	}
+
+    public void setReducePhaseDone() {
+        this.reducePhaseDone = true;
+    }
 
     @Override
     public void barrier() throws RemoteException {
@@ -81,7 +93,11 @@ public class StubImpl implements StubInterface {
     }
 
     @Override
-    public boolean isMapPhaseOver() throws RemoteException {
+    public boolean isMapPhaseDone() throws RemoteException {
+        return mapPhaseDone;
+    }
+
+    public boolean isTimePopulateReduce() {
         if (!this.getMapQueue().isEmpty() || !this.getMapTakenList().isEmpty()) {
             return false;
         }
@@ -89,37 +105,28 @@ public class StubImpl implements StubInterface {
     }
 
     @Override
-    public boolean isReducePhaseOver() throws RemoteException {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'isReducePhaseOver'");
+    public boolean isReducePhaseDone() throws RemoteException {
+        return reducePhaseDone;
+    }
+
+    public boolean isTimePostProcessing() {
+        if (!this.getReduceQueue().isEmpty() || !this.getReduceTakenList().isEmpty()) {
+            return false;
+        }
+        return true;
+    }
+
+    public boolean isPostProcessingDone() throws RemoteException{
+        return this.postProcessingDone;
+    }
+
+    public void setPostProcessingDone() {
+        this.postProcessingDone = true;
     }
 
     public void populateMapQueue(Config config) {
-        // String filedir = config.getInputDir();
-        // Path dir = Paths.get(filedir);
-        // List<String> batch = new ArrayList<>();
-        // int filecount =0;
-
-        // try(Stream<Path> paths = Files.list(dir)){
-        //     for (Path path: paths.collect(Collectors.toList())){
-        //         if (Files.isRegularFile(path)){
-        //             filecount++;
-        //             batch.add(path.toAbsolutePath().normalize().toString());
-        //             if (batch.size() == BATCH_SIZE){
-        //                 mapQueue.offer(new ArrayList<>(batch));
-        //                 batch.clear();
-        //             }
-        //         } else {
-        //             System.out.println(Util.getMyHostname()+" | last batch size "+ batch.size());
-        //         }
-        //     }
-
-        // } catch (IOException e) {
-        //     // TODO: handle exception
-        //     System.err.println("Error reading directory: " + e.getMessage());
-        // }
-
 		File[] files = new File(config.getInputDir()).listFiles();
+        System.out.println(this.name+" | populating Map Queue...");
         if (files == null || files.length == 0) {
             System.out.println("No files found in directory: " + config.getInputDir());
             return;
@@ -129,28 +136,61 @@ public class StubImpl implements StubInterface {
             if (file.isFile()) {
                 batch.add(file.getAbsolutePath());
                 if (batch.size() == BATCH_SIZE) {
-                    System.out.println(Util.getMyHostname()+" | new batch "+ batch);
+                    // System.out.println(this.name+" | new batch "+ batch);
                     mapQueue.offer(new ArrayList<>(batch));
                     batch.clear();
                 }
-            }
-            else{
-            System.out.println(Util.getMyHostname()+" | ignoring "+ file.getAbsolutePath());
+            } else {
+                System.out.println(this.name+" | ignoring "+ file.getAbsolutePath());
             }
         }
         // Add any remaining files that didn't complete a full batch
         if (!batch.isEmpty()) {
-            System.out.println(Util.getMyHostname()+" | last batch "+ batch);
+            // System.out.println(this.name + " | last batch "+ batch);
             mapQueue.offer(new ArrayList<>(batch));
-            System.out.println(Util.getMyHostname()+" | last batch size "+ batch.size());
+            // System.out.println(this.name + " | last batch size "+ batch.size());
             batch.clear();
         }
 
-        System.out.println(Util.getMyHostname()+" | Batched " + files.length + " files into " + mapQueue.size() + " batches.");
+        System.out.println(this.name + " | Batched " + files.length + " files into " + mapQueue.size() + " batches.");
     }
 
+    public void populateReduceQueue(Config config) {
+        System.out.println(this.name + " | populating Reduce Queue...");
+        File[] files = new File(config.getIntermediateDir()).listFiles();
+        if (files == null || files.length == 0 ) {
+            System.out.println(" No intermediate files found in directory" + config.getIntermediateDir());
+            return;
+        }
+        List<String> batch = new ArrayList<>();
+        for (File file : files) {
+            if (file.isFile()) {
+                batch.add(file.getAbsolutePath());
+                if (batch.size() == BATCH_SIZE) {
+                    // System.out.println(this.name+" | new batch "+ batch);
+                    reduceQueue.offer(new ArrayList<>(batch));
+                    batch.clear();
+                }
+            } else {
+                System.out.println(this.name + " | ignoring " + file.getAbsolutePath());
+            }
+        }
+        // Add any remaining files that didn't complete a full batch
+        if (!batch.isEmpty()) {
+            // System.out.println(this.name+" | last batch "+ batch);
+            reduceQueue.offer(new ArrayList<>(batch));
+            // System.out.println(this.name+" | last batch size "+ batch.size());
+            batch.clear();
+        }
+        this.mapPhaseDone = true;
+        System.out.println(this.name+" | Batched " + files.length + " intermediate files into " + reduceQueue.size() + " batches.");
+    }
     @Override
     public void mapJobCompleted(String hostname) throws RemoteException {
         removeFromMapTakenList(hostname);
+    }
+    @Override
+    public void reduceJobCompleted(String hostname) throws RemoteException {
+        removeFromReduceTakenList(hostname);
     }
 }
