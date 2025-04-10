@@ -178,9 +178,9 @@ public class MapReduce {
 		start = System.nanoTime();
 		if (!files.isEmpty()){
 			runReducePhase(files);
-			logger.info(this.name + " | contacting server"); 
+			// logger.info(this.name + " | contacting server"); 
 			server.reduceJobCompleted(this.name);
-			logger.info(this.name + " | notified server"); 
+			// logger.info(this.name + " | notified server"); 
 		}else{
 			try { logger.info(this.name + " | sleeping after reduce for 1 sec");
 				Thread.sleep(1000);
