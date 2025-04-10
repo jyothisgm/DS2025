@@ -101,6 +101,7 @@ public final class WordCount implements MapReduceApplication {
 			this.mr.runPostProcessingPhase();
 			long elapsed = (System.nanoTime() - start) / 1000000;
 			logger.info("post processing phase took: " + elapsed + " milliseconds.");
+			serverImpl.setPostProcessingDone();
 
 		} else {
 			logger.info(Util.getMyHostname() + " | Client started and thinks master is: " + Util.getCoordinatorHostname());

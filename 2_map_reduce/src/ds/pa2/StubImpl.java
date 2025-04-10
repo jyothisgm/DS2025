@@ -19,6 +19,7 @@ public class StubImpl implements StubInterface {
     private int BATCH_SIZE = 32;
     private Queue<List<String>> mapQueue = new LinkedList<>();
     private boolean populateReduceQueueDone = false;
+    private boolean postProcessingDone = false;
     private String name = Util.getMyHostname();
 
     public synchronized Queue<List<String>> getMapQueue() {
@@ -105,6 +106,14 @@ public class StubImpl implements StubInterface {
             return false;
         }
         return true;
+    }
+
+    public boolean isPostProcessingOver() throws RemoteException{
+        return this.postProcessingDone;
+    }
+
+    public void setPostProcessingDone(){
+        this.postProcessingDone = true;
     }
 
     public void populateMapQueue(Config config) {

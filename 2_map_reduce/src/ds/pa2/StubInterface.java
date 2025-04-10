@@ -32,4 +32,6 @@ public interface StubInterface extends Remote {
     public void mapJobCompleted(String hostname) throws RemoteException;
 
     public void reduceJobCompleted(String hostname) throws RemoteException;
+
+    public boolean isPostProcessingOver() throws RemoteException;
 }

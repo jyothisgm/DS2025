@@ -198,6 +198,16 @@ public class MapReduce {
 	logger.info(this.name + " | reduce phase took: " + elapsed + " milliseconds.");
 
 	logger.info("total application time is: " + totalTime + " milliseconds.");
+	boolean isPostProcessingOver = server.isPostProcessingOver();
+	while (!isPostProcessingOver){
+			try { logger.info(this.name + " | waiting for postprocessing to finish for 1 sec");
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			isPostProcessingOver = server.isPostProcessingOver();
+	}
     }
 
     /**
