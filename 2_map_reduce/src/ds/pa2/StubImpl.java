@@ -1,12 +1,18 @@
 package ds.pa2;
 
 import java.io.File;
+// import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
+// import java.rmi.registry.LocateRegistry;
+// import java.rmi.registry.Registry;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -16,26 +22,46 @@ import java.util.Queue;
  * TODO: You have to modify and extend this file.
  */
 public class StubImpl implements StubInterface {
-    private int BATCH_SIZE = 32;
-    private Queue<List<String>> mapQueue = new LinkedList<>();
+    private int BATCH_SIZE_MAP = 32;
+    private int BATCH_SIZE_REDUCE = 128;
+
     private boolean mapPhaseDone = false;
     private boolean reducePhaseDone = false;
-
     private boolean postProcessingDone = false;
-    private String name = Util.getMyHostname();
 
+    private String name = Util.getMyHostname();
+    public String type = Util.amICoordinator() ? "COORDINATOR" : "WORKER";
+
+    private static Logger logger = LoggerFactory.getLogger(WordCount.class);
+    private HashMap<String, StubInterface> clientStubs;
+
+    public HashMap<String, StubInterface> getClientStubs() {
+        return clientStubs;
+    }
+
+    private Queue<List<String>> mapQueue = new LinkedList<>();
     public synchronized Queue<List<String>> getMapQueue() {
 		return mapQueue;
 	}
 
 	private HashMap<String, List<String>> mapTakenList = new HashMap<>();
-
     @Override
 	public synchronized List<String> getMapJob(String key) throws RemoteException {
         List<String> mapTaken = List.<String>of();
+        // if (!clientStubs.containsKey(key)) {
+        //     Registry registry = LocateRegistry.getRegistry(key, 1099);
+        //     logger.debug(this.type + ": " + this.name + " | Server connected to " + key);
+        //     try {
+        //         StubInterface client = (StubInterface) registry.lookup(key);
+        //         clientStubs.put(key, client);
+        //     } catch (RemoteException | NotBoundException e) {
+        //         // TODO Auto-generated catch block
+        //         e.printStackTrace();
+        //     }
+        // }
         if (!this.getMapQueue().isEmpty()) {
-		mapTaken = mapQueue.poll();
-		this.mapTakenList.put(key, mapTaken);
+            mapTaken = mapQueue.poll();
+            this.mapTakenList.put(key, mapTaken);
         }
 		return mapTaken;
 	}
@@ -87,9 +113,11 @@ public class StubImpl implements StubInterface {
     }
 
     @Override
-    public boolean heartBeat() throws RemoteException {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'heartBeat'");
+    public boolean heartBeat(boolean end) throws RemoteException {
+        if (end) {
+            System.exit(0);
+        }
+        return true;
     }
 
     @Override
@@ -126,64 +154,59 @@ public class StubImpl implements StubInterface {
 
     public void populateMapQueue(Config config) {
 		File[] files = new File(config.getInputDir()).listFiles();
-        System.out.println(this.name+" | populating Map Queue...");
+        logger.info(this.type + ": " + this.name + " | Populating Map Queue...");
         if (files == null || files.length == 0) {
-            System.out.println("No files found in directory: " + config.getInputDir());
+            logger.warn(this.type + ": " + this.name + " | No files found in directory: " + config.getInputDir());
             return;
         }
         List<String> batch = new ArrayList<>();
         for (File file : files) {
             if (file.isFile()) {
                 batch.add(file.getAbsolutePath());
-                if (batch.size() == BATCH_SIZE) {
-                    // System.out.println(this.name+" | new batch "+ batch);
+                if (batch.size() == BATCH_SIZE_MAP) {
                     mapQueue.offer(new ArrayList<>(batch));
                     batch.clear();
                 }
             } else {
-                System.out.println(this.name+" | ignoring "+ file.getAbsolutePath());
+                logger.warn(this.type + ": " + this.name + " | ignoring "+ file.getAbsolutePath());
             }
         }
         // Add any remaining files that didn't complete a full batch
         if (!batch.isEmpty()) {
-            // System.out.println(this.name + " | last batch "+ batch);
             mapQueue.offer(new ArrayList<>(batch));
-            // System.out.println(this.name + " | last batch size "+ batch.size());
             batch.clear();
         }
-
-        System.out.println(this.name + " | Batched " + files.length + " files into " + mapQueue.size() + " batches.");
+        System.out.println("Batched " + files.length + " files into " + mapQueue.size() + " batches.");
+        logger.info(this.type + ": " + this.name + " | Batched " + files.length + " files into " + mapQueue.size() + " batches.");
     }
 
     public void populateReduceQueue(Config config) {
-        System.out.println(this.name + " | populating Reduce Queue...");
+        logger.info(this.type + ": " + this.name + " | Populating Reduce Queue...");
         File[] files = new File(config.getIntermediateDir()).listFiles();
         if (files == null || files.length == 0 ) {
-            System.out.println(" No intermediate files found in directory" + config.getIntermediateDir());
+            logger.warn(this.type + ": " + this.name + " | No intermediate files found in directory" + config.getIntermediateDir());
             return;
         }
         List<String> batch = new ArrayList<>();
         for (File file : files) {
             if (file.isFile()) {
                 batch.add(file.getAbsolutePath());
-                if (batch.size() == BATCH_SIZE) {
-                    // System.out.println(this.name+" | new batch "+ batch);
+                if (batch.size() == BATCH_SIZE_REDUCE) {
                     reduceQueue.offer(new ArrayList<>(batch));
                     batch.clear();
                 }
             } else {
-                System.out.println(this.name + " | ignoring " + file.getAbsolutePath());
+                logger.warn(this.type + ": " + this.name + " | ignoring " + file.getAbsolutePath());
             }
         }
         // Add any remaining files that didn't complete a full batch
         if (!batch.isEmpty()) {
-            // System.out.println(this.name+" | last batch "+ batch);
             reduceQueue.offer(new ArrayList<>(batch));
-            // System.out.println(this.name+" | last batch size "+ batch.size());
             batch.clear();
         }
         this.mapPhaseDone = true;
-        System.out.println(this.name+" | Batched " + files.length + " intermediate files into " + reduceQueue.size() + " batches.");
+        System.out.println("Batched " + files.length + " intermediate files into " + reduceQueue.size() + " batches.");
+        logger.info(this.type + ": " + this.name + " | Batched " + files.length + " intermediate files into " + reduceQueue.size() + " batches.");
     }
     @Override
     public void mapJobCompleted(String hostname) throws RemoteException {

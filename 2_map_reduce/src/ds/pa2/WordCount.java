@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.rmi.AlreadyBoundException;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
+import java.util.Map;
 import java.util.Objects;
 
 import java.rmi.registry.LocateRegistry;
@@ -46,13 +47,12 @@ public final class WordCount implements MapReduceApplication {
 
 	private StubInterface connect() throws RemoteException, NotBoundException {
 		String host = Util.getCoordinatorHostname();
-		// System.err.println("client connecting to " + host);
-		logger.info(Util.getMyHostname()+" | Client connecting to " + host);
+		logger.info(this.mr.type + ": " + this.mr.name + " | Client connecting to " + host);
 
 		Registry registry = LocateRegistry.getRegistry(host, 1099);
-		logger.debug(Util.getMyHostname()+" | Client connected to " + host);
-		StubInterface server = (StubInterface) registry.lookup("NumServer");
-		logger.debug(Util.getMyHostname()+" | Server stub received for " + host);
+		logger.debug(this.mr.type + ": " + this.mr.name + " | Client connected to " + host);
+		StubInterface server = (StubInterface) registry.lookup(host);
+		logger.debug(this.mr.type + ": " + this.mr.name + " | Server stub received for " + host);
 		return server;
 	}
 
@@ -67,63 +67,67 @@ public final class WordCount implements MapReduceApplication {
 			long startTime = System.nanoTime();
 			long start, elapsed;
 
-			logger.info(this.mr.name + " | Starting Coordinator");
-			System.out.println(this.mr.name + " | Starting Coordinator");
+			logger.info(this.mr.type + ": " + this.mr.name + " | Starting Coordinator");
+			System.out.println("Starting Coordinator");
 
 			StubImpl serverImpl = new StubImpl();
 			
-			logger.info(this.mr.name + " | Populate Map Queue");
-			System.out.println(this.mr.name + " | Populate Map Queue");
+			logger.info(this.mr.type + ": " + this.mr.name + " | Populate Map Queue");
+			System.out.println("Populate Map Queue");
 	
 			start = System.nanoTime();
 			serverImpl.populateMapQueue(this.mr.getConfig());
 			elapsed = (System.nanoTime() - start) / 1000000;
 
-			logger.info(this.mr.name + " | Map Queue Populated. Took " + elapsed + " milliseconds.");
-			System.out.println(this.mr.name + " | Map Queue Populated. Took " + elapsed + " milliseconds.");
+			logger.info(this.mr.type + ": " + this.mr.name + " | Map Queue Populated. Took: " + elapsed + " milliseconds.");
+			System.out.println("Map Queue Populated. Took: " + elapsed + " milliseconds.");
 
 			StubInterface serverStub = (StubInterface) UnicastRemoteObject.exportObject(serverImpl, 1099);
 			Registry reg = LocateRegistry.createRegistry(1099);
 
 			try {
-				reg.bind("NumServer", serverStub);
+				reg.bind(this.mr.name, serverStub);
 			} catch (RemoteException | AlreadyBoundException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-			logger.info(this.mr.name + " | The server node should now be visible on the registry...");
-			logger.info(this.mr.name + " | Map Phase Started");
-			System.out.println(this.mr.name + " | Map Phase Started");
+			logger.info(this.mr.type + ": " + this.mr.name + " | The server node should now be visible on the registry...");
+			logger.info(this.mr.type + ": " + this.mr.name + " | Map Phase Started");
+			System.out.println("Map Phase Started");
 			start = System.nanoTime();
 			while (!serverImpl.isTimePopulateReduce()) {
 				try {
-					logger.debug(this.mr.name + " | Sleeping for map phase");
+					logger.trace(this.mr.type + ": " + this.mr.name + " | Sleeping for map phase");
 					Thread.sleep(50);
+					for (Map.Entry<String, StubInterface> entry : serverImpl.getClientStubs().entrySet()) {
+						entry.getValue().heartBeat(false);
+						logger.info(this.mr.type + ": " + this.mr.name + " | Heartbeat " + entry.getKey());
+					}
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 			}
 			elapsed = (System.nanoTime() - start) / 1000000;
-			logger.info(this.mr.name + " | Map Phase Done. Took " + elapsed + " milliseconds.");
-			System.out.println(this.mr.name + " | Map Phase Done. Took " + elapsed + " milliseconds.");
+			logger.info(this.mr.type + ": " + this.mr.name + " | Map Phase Done. Took: " + elapsed + " milliseconds.");
+			System.out.println("Map Phase Done. Took: " + elapsed + " milliseconds.");
 	
-			logger.info(this.mr.name + " | Populate Reduce Queue");
-			System.out.println(this.mr.name + " | Populate Reduce Queue");
+			logger.info(this.mr.type + ": " + this.mr.name + " | Populate Reduce Queue");
+			System.out.println("Populate Reduce Queue");
 			start = System.nanoTime();
 			serverImpl.populateReduceQueue(this.mr.getConfig());
 			elapsed = (System.nanoTime() - start) / 1000000;
-			logger.info(this.mr.name + " | Reduce Queue Populated. Took " + elapsed + " milliseconds.");
-			System.out.println(this.mr.name + " | Reduce Queue Populated. Took " + elapsed + " milliseconds.");
+			logger.info(this.mr.type + ": " + this.mr.name + " | Reduce Queue Populated. Took: " + elapsed + " milliseconds.");
+			System.out.println("Reduce Queue Populated. Took: " + elapsed + " milliseconds.");
 
 			// Set map phase over after Reduce Job is populated
 			serverImpl.setMapPhaseDone();
-			logger.info(this.mr.name + " | Reduce Phase Started");
-			System.out.println(this.mr.name + " | Reduce Phase Started");
+			logger.info(this.mr.type + ": " + this.mr.name + " | Reduce Phase Started");
+			System.out.println("Reduce Phase Started");
 			start = System.nanoTime();
 			while(!serverImpl.isTimePostProcessing()){
 				try {
-					logger.debug(this.mr.name + " | Sleeping for reduce phase");
+					logger.trace(this.mr.type + ": " + this.mr.name + " | Sleeping for reduce phase");
 					Thread.sleep(50);
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
@@ -131,38 +135,36 @@ public final class WordCount implements MapReduceApplication {
 				}
 			}	
 			elapsed = (System.nanoTime() - start) / 1000000;
-			logger.info(this.mr.name + " | Reduce Phase Done. Took " + elapsed + " milliseconds.");
-			System.out.println(this.mr.name + " | Reduce Phase Done. Took " + elapsed + " milliseconds.");
+			logger.info(this.mr.type + ": " + this.mr.name + " | Reduce Phase Done. Took: " + elapsed + " milliseconds.");
+			System.out.println("Reduce Phase Done. Took: " + elapsed + " milliseconds.");
 
 			// Set reduce phase over
 			serverImpl.setReducePhaseDone();
 
-			logger.info(this.mr.name + " | Post Processing Phase Started");
-			System.out.println(this.mr.name + " | Post Processing Phase Started");
+			logger.info(this.mr.type + ": " + this.mr.name + " | Post Processing Phase Started");
+			System.out.println("Post Processing Phase Started");
 
 			start = System.nanoTime();
 			this.mr.runPostProcessingPhase();
 			elapsed = (System.nanoTime() - start) / 1000000;
-			logger.info(this.mr.name + " | Post Processing Phase Done. Took: " + elapsed + " milliseconds.");
-			System.out.println(this.mr.name + " | Post Processing Phase Done. Took: " + elapsed + " milliseconds.");
+			logger.info(this.mr.type + ": " + this.mr.name + " | Post Processing Phase Done. Took: " + elapsed + " milliseconds.");
+			System.out.println("Post Processing Phase Done. Took: " + elapsed + " milliseconds.");
 
-			elapsed = (System.nanoTime() - startTime) / 1000000;
-			logger.info(this.mr.name + " | Total time took: " + elapsed + " milliseconds.");
-			System.out.println(this.mr.name + " | Total time took: " + elapsed + " milliseconds.");
+			elapsed = (System.nanoTime() - startTime) / 1000000 / 1000;
+			logger.info(this.mr.type + ": " + this.mr.name + " | Total time: " + elapsed + " seconds.");
+			System.out.println("Total time: " + elapsed + " seconds.");
 
 			serverImpl.setPostProcessingDone();
 			System.exit(0);
-
 		} else {
-			logger.info(Util.getMyHostname() + " | Client started and thinks master is: " + Util.getCoordinatorHostname());
+			logger.info(this.mr.type + ": " + this.mr.name + " | Client started and thinks master is: " + Util.getCoordinatorHostname());
 
 			StubInterface server = null;
 			while (Objects.isNull(server)) {
 				try {
-					Thread.sleep(1000);
 					server = connect();
-				} catch (RemoteException | NotBoundException | InterruptedException e) {
-					logger.warn(e.getMessage(), e);
+				} catch (RemoteException | NotBoundException e) {
+					logger.warn(this.mr.type + ": " + this.mr.name + " | " + e.getMessage(), e);
 					try {
 						Thread.sleep(100);
 					} catch (InterruptedException e1) {
@@ -171,8 +173,16 @@ public final class WordCount implements MapReduceApplication {
 					}
 				}
 			}
+			// StubImpl clientImpl = new StubImpl();
+			// Registry reg = LocateRegistry.createRegistry(1099);
+			// StubInterface clientStub = (StubInterface) UnicastRemoteObject.exportObject(clientImpl, 1099);
+			// try {
+			// 	reg.bind(this.mr.name, clientStub);
+			// } catch (RemoteException | AlreadyBoundException e) {
+			// 	// TODO Auto-generated catch block
+			// 	e.printStackTrace();
+			// }
 			mr.mapReduce(server);
-			System.exit(0);
 		}
 	}
 

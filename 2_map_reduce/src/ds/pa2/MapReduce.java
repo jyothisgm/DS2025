@@ -36,14 +36,14 @@ public class MapReduce {
 	private static MapReduceApplication userApplication;
 
     private int currentIntermediateFileNumber = 0;
-    // private int currentIntermediateSize = 0;
-    // private final ArrayList<Tuple> currentIntermediateTuples = new ArrayList<Tuple>();
 	private final HashMap<String,Integer> currentIntermediateHashmap = new HashMap<String,Integer>(); 
 
     private int currentOutputFileNumber = 0;
     private int currentOutputSize = 0;
     private final ArrayList<Tuple> currentOutputTuples = new ArrayList<Tuple>();
 	public String name = Util.getMyHostname();
+	public String type = Util.amICoordinator() ? "COORDINATOR" : "WORKER";
+
     /**
      * A treeMap is sorted. This is very useful for checking whether the output is
      * correct. Some steps can be non-deterministic, so the order of key/value pairs
@@ -135,25 +135,25 @@ public class MapReduce {
 	}
 
 	long start, elapsed, totalTime = 0;
-	logger.info(this.name + " | starting map phase");
+	logger.info(this.type + ": " + this.name + " | starting map phase");
 	boolean isMapPhaseDone = false;
 	while (!isMapPhaseDone) {
 		start = System.nanoTime();
-		logger.debug(this.name + " | asking for work");
+		logger.debug(this.type + ": " + this.name + " | asking for work");
 		List<String> files = server.getMapJob(this.name);
 		if(!files.isEmpty()) {
-			logger.info(this.name + " | starting map job on: "+files.size()+" books: "+files);
+			logger.info(this.type + ": " + this.name + " | starting map job on: " + files.size() + " books.");
 			runMapPhase(files);
-			logger.debug(this.name + " | contacting server"); 
+			logger.debug(this.type + ": " + this.name + " | contacting server");
 			server.mapJobCompleted(this.name);
-			logger.debug(this.name + " | notified server"); 
+			logger.debug(this.type + ": " + this.name + " | notified server");
 
 			elapsed = (System.nanoTime() - start) / 1000000;
 			totalTime += elapsed;
-			logger.info(this.name + " | map job took: " + elapsed + " milliseconds.");
+			logger.info(this.type + ": " + this.name + " | map job took: " + elapsed + " milliseconds.");
 		} else {
 			try {
-				logger.debug(this.name + " | sleeping after reduce for 100 milliseconds");
+				logger.debug(this.type + ": " + this.name + " | sleeping after reduce for 100 milliseconds");
 				Thread.sleep(100);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
@@ -161,37 +161,30 @@ public class MapReduce {
 			}
 		}
 		isMapPhaseDone = server.isMapPhaseDone();
-		logger.debug(this.name + " | Is map phase done?: " + isMapPhaseDone);
+		logger.debug(this.type + ": " + this.name + " | Is map phase done?: " + isMapPhaseDone);
 	}
 
-	logger.info(this.name + " | map phase took:" + totalTime + " milliseconds.");
-
-	// TODO BARRIER HERE so that workers stop but coordinator runs populateReduceQeueue
-	// then coordinator also joins barrier to reach capacity and break barrier
-	// this should also contain heartbeats so that the capacity is adjusted
-	// if coordinator fails then this will block...
-
-	logger.info(this.name + " | starting reduce phase");
+	logger.info(this.type + ": " + this.name + " | map phase took:" + totalTime + " milliseconds.");
+	logger.info(this.type + ": " + this.name + " | starting reduce phase");
 	boolean isReducePhaseDone = false;
 
-	// long red_start = System.nanoTime();
 	while (!isReducePhaseDone){
-		logger.debug(this.name + " | asking for work");
+		logger.debug(this.type + ": " + this.name + " | asking for work");
 		List<String> files = server.getReduceJob(this.name);
 		start = System.nanoTime();
 		if (!files.isEmpty()){
-			logger.info(this.name + " | starting reduce job on: "+files.size()+" books: "+files);
+			logger.info(this.type + ": " + this.name + " | starting reduce job on: " + files.size() + " books.");
 			runReducePhase(files);
-			logger.debug(this.name + " | contacting server"); 
+			logger.debug(this.type + ": " + this.name + " | contacting server");
 			server.reduceJobCompleted(this.name);
-			logger.debug(this.name + " | notified server"); 
+			logger.debug(this.type + ": " + this.name + " | notified server");
 
 			elapsed = (System.nanoTime() - start) / 1000000;
 			totalTime += elapsed;
-			logger.info(this.name + " | reduce job took: " + elapsed + " milliseconds.");
+			logger.info(this.type + ": " + this.name + " | Reduce job took: " + elapsed + " milliseconds.");
 		} else {
 			try { 
-				logger.debug(this.name + " | sleeping after reduce for 100 milliseconds");
+				logger.debug(this.type + ": " + this.name + " | sleeping after reduce for 100 milliseconds");
 				Thread.sleep(100);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
@@ -200,21 +193,8 @@ public class MapReduce {
 		}
 		isReducePhaseDone = server.isReducePhaseDone();
 	}
-	// elapsed = (System.nanoTime() - red_start) / 1000000;
-	// logger.info(this.name + " | reduce phase took: " + elapsed + " milliseconds.");
 
-	logger.info(this.name + " | total application time is: " + totalTime + " milliseconds.");
-	// boolean isPostProcessingDone = server.isPostProcessingDone();
-	// while (!isPostProcessingDone) {
-	// 	try { 
-	// 		logger.trace(this.name + " | waiting for postprocessing to finish for 1 sec");
-	// 		Thread.sleep(1000);
-	// 	} catch (InterruptedException e) {
-	// 		// TODO Auto-generated catch block
-	// 		e.printStackTrace();
-	// 	}
-	// 	isPostProcessingDone = server.isPostProcessingDone();
-	// }
+	logger.info(this.type + ": " + this.name + " | Total application time is: " + totalTime + " milliseconds.");
     }
 
     /**
@@ -232,21 +212,11 @@ public class MapReduce {
     public void emitIntermediate(String key, String value) throws IOException {
 	// TODO use hashmap instead of tupple
 	if (!currentIntermediateHashmap.containsKey(key)){
-		// int totalKeyLength=0;
-		// int totalValueLength =0;
-		// for (HashMap.Entry<String, Integer> entry : currentIntermediateHashmap.entrySet()) {
-		// 		totalKeyLength += entry.getKey().length();
-		// 		totalValueLength += entry.getValue().toString().length();
-		// 	}
-		// currentIntermediateSize = totalKeyLength + totalValueLength;
-		// System.err.printf("%d keys: total key and val lengths %d, %d vs target %d\n",currentIntermediateHashmap.size() , totalKeyLength,totalValueLength, config.getIntermediateChunkSize());
 		if (currentIntermediateHashmap.size() >= 1024) {
 			flushIntermediate();
 		}
 	}
-	// currentIntermediateSize += key.length() + value.length();
 	currentIntermediateHashmap.merge(key,Integer.parseInt(value),Integer::sum);
-	// currentIntermediateTuples.add(new Tuple(key, value));
     }
 
     /**
@@ -325,7 +295,7 @@ public class MapReduce {
      */
     private void runMapPhase(List<String> files) throws IOException {
 	for (String filePath : files) {
-	    logger.trace("mapping file: " + filePath);
+	    logger.trace(this.type + ": " + this.name + " | mapping file: " + filePath);
 		File file = new File(filePath);
 	    try (BufferedReader in = new BufferedReader(new FileReader(file))) {
 			List<String> allLines = Arrays.asList(in.lines().toArray(String[]::new));
@@ -345,7 +315,7 @@ public class MapReduce {
      */
     private void runReducePhase(List<String> files) throws IOException {
 	for (String filePath : files) {
-		logger.trace("reducing file: " + filePath);
+		logger.trace(this.type + ": " + this.name + " | reducing file: " + filePath);
 		File file = new File(filePath);
 		reduceFile(file);
 		}
@@ -396,21 +366,14 @@ public class MapReduce {
     private void flushIntermediate() throws IOException {
 	String fileName = config.getIntermediateDir() + File.separator + this.name+ "_intermediate" + currentIntermediateFileNumber
 		+ ".txt";
-	logger.trace("Flush intermediate: " + fileName);
+	logger.trace(this.type + ": " + this.name + " | Flush intermediate: " + fileName);
 	currentIntermediateFileNumber++;
 
 	try (BufferedWriter bw = new BufferedWriter(new FileWriter(fileName))) {
 		for (HashMap.Entry<String,Integer> entry: currentIntermediateHashmap.entrySet()){
 			bw.write(entry.getKey() + "|" + entry.getValue() + "\n");
-			// System.err.println(entry.getKey() + "|" + entry.getValue() + "\n");
 		}
-	    // for (int i = 0; i < currentIntermediateTuples.size(); i++) {
-		// Tuple t = currentIntermediateTuples.get(i);
-		// bw.write(t.key + "|" + t.value + "\n");
-	    // }
 	} finally {
-	    // currentIntermediateTuples.clear();
-	    // currentIntermediateSize = 0;
 		currentIntermediateHashmap.clear();
 	}
     }
@@ -431,7 +394,7 @@ public class MapReduce {
 	File out = new File(fileName);
 
 	File tmpFile = File.createTempFile("tempOutput_" + myOutputFileNumber, ".txt", new File(config.getOutputDir()));
-	logger.trace("Flush output: " + myOutputFileNumber + ": using temp file: " + tmpFile.getName());
+	logger.debug(this.type + ": " + this.name + " | Flush output: " + myOutputFileNumber + ": using temp file: " + tmpFile.getName());
 
 	try (BufferedWriter bw = new BufferedWriter(new FileWriter(tmpFile))) {
 	    for (int i = 0; i < currentOutputTuples.size(); i++) {
@@ -443,7 +406,7 @@ public class MapReduce {
 	    currentOutputSize = 0;
 	}
 
-	logger.trace("Rename temp output " + tmpFile.getName() + " to output: " + fileName);
+	logger.debug(this.type + ": " + this.name + " | Rename temp output " + tmpFile.getName() + " to output: " + fileName);
 
 	java.nio.file.Files.move(tmpFile.toPath(), out.toPath(), StandardCopyOption.ATOMIC_MOVE);
     }
@@ -457,9 +420,9 @@ public class MapReduce {
      */
     public void runPostProcessingPhase() throws IOException {
 	File[] files = new File(config.getOutputDir()).listFiles();
-
+	logger.info(this.type + ": " + this.name + " | post processing files: " + files.length);
 	for (File f : files) {
-	    logger.trace("post processing file: " + f);
+	    logger.trace(this.type + ": " + this.name + " | post processing file: " + f);
 
 	    try (BufferedReader in = new BufferedReader(new FileReader(f))) {
 		String[] allLines = in.lines().toArray(String[]::new);
@@ -483,7 +446,7 @@ public class MapReduce {
 	File out = new File(fileName);
 
 	File tmpFile = File.createTempFile("finalOutput_", ".txt", new File(config.getOutputDir()));
-	logger.trace("writing final output");
+	logger.debug(this.type + ": " + this.name + " | writing final output");
 
 	try (BufferedWriter bw = new BufferedWriter(new FileWriter(tmpFile))) {
 	    for (String key : postProcessingMap.keySet()) {
@@ -491,7 +454,7 @@ public class MapReduce {
 	    }
 	}
 
-	logger.info("Rename temp output " + tmpFile.getName() + " to output: " + fileName);
+	logger.info(this.type + ": " + this.name + " | Rename temp output " + tmpFile.getName() + " to output: " + fileName);
 	java.nio.file.Files.move(tmpFile.toPath(), out.toPath(), StandardCopyOption.ATOMIC_MOVE);
     }
 
