@@ -59,7 +59,7 @@ public class StubImpl implements StubInterface {
 	public synchronized List<String> getReduceJob(String key) throws RemoteException{
         List<String> reduceTaken = List.<String>of();
         if (!this.getReduceQueue().isEmpty()) {
-		reduceTaken = mapQueue.poll();
+		reduceTaken = reduceQueue.poll();
 		this.reduceTakenList.put(key, reduceTaken);
         }
 		return reduceTaken;
@@ -84,8 +84,8 @@ public class StubImpl implements StubInterface {
     @Override
     public boolean isMapPhaseOver() throws RemoteException {
         if (!this.getMapQueue().isEmpty() || !this.getMapTakenList().isEmpty()|| !this.populateReduceQueueDone) {
-            System.out.println(this.name + " | Map phase not done");
-            System.out.println(this.name + " | " + this.getMapQueue().size() + "," + this.getMapTakenList().size() + "," + this.populateReduceQueueDone);
+            // System.out.println(this.name + " | Map phase not done");
+            // System.out.println(this.name + " | " + this.getMapQueue().size() + "," + this.getMapTakenList().size() + "," + this.populateReduceQueueDone);
             return false;
         }
         return true;
@@ -100,6 +100,8 @@ public class StubImpl implements StubInterface {
     @Override
     public boolean isReducePhaseOver() throws RemoteException {
         if (!this.getReduceQueue().isEmpty() || !this.getReduceTakenList().isEmpty()) {
+            System.out.println(this.name + " | Reduce phase not done");
+            System.out.println(this.name + " | " + this.getReduceQueue().size() + "," + this.getReduceTakenList().size() );
             return false;
         }
         return true;
