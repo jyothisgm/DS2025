@@ -2,6 +2,7 @@ package ds.pa2;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;
+import java.util.HashMap;
 import java.util.List;
 
 
@@ -19,11 +20,11 @@ public interface StubInterface extends Remote {
 	 */
 	public boolean heartBeat(boolean end) throws RemoteException;
 
-    public List<String> getMapJob(String hostname) throws RemoteException;
+    public HashMap<Long, List<String>> getMapJob(String hostname) throws RemoteException;
 
     public boolean isMapPhaseDone() throws RemoteException;
 
-    public List<String> getReduceJob(String hostname) throws RemoteException;
+    public HashMap<Long, List<String>> getReduceJob(String hostname) throws RemoteException;
 
     public boolean isReducePhaseDone() throws RemoteException;
 

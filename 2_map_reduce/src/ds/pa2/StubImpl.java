@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
  */
 public class StubImpl implements StubInterface {
     private int BATCH_SIZE_MAP = 32;
-    private int BATCH_SIZE_REDUCE = 128;
+    private int BATCH_SIZE_REDUCE = 32;
 
     private boolean mapPhaseDone = false;
     private boolean reducePhaseDone = false;
@@ -39,16 +39,16 @@ public class StubImpl implements StubInterface {
         return clientStubs;
     }
 
-    private Queue<List<String>> mapQueue = new LinkedList<>();
-    public synchronized Queue<List<String>> getMapQueue() {
+    private Queue<HashMap<Long, List<String>>> mapQueue = new LinkedList<>();
+    public synchronized Queue<HashMap<Long, List<String>>> getMapQueue() {
 		return mapQueue;
 	}
 
-	private HashMap<String, List<String>> mapTakenList = new HashMap<>();
+	private HashMap<String, HashMap<Long, List<String>>> mapTakenList = new HashMap<>();
 
     @Override
-	public synchronized List<String> getMapJob(String key) throws RemoteException {
-        List<String> mapTaken = List.<String>of();
+	public synchronized HashMap<Long, List<String>> getMapJob(String key) throws RemoteException {
+        HashMap<Long, List<String>> mapTaken = new HashMap<>();
         try {
             if (!clientStubs.containsKey(key)) {
                 Registry registry = LocateRegistry.getRegistry(key, 1099);
@@ -68,7 +68,7 @@ public class StubImpl implements StubInterface {
 		return mapTaken;
 	}
 
-	public synchronized HashMap<String, List<String>> getMapTakenList() {
+	public synchronized HashMap<String, HashMap<Long, List<String>>> getMapTakenList() {
 		return mapTakenList;
 	}
 
@@ -80,19 +80,19 @@ public class StubImpl implements StubInterface {
 		mapTakenList.remove(key);
 	}
 
-	private Queue<List<String>> reduceQueue = new LinkedList<>();
-	public Queue<List<String>> getReduceQueue() {
+	private Queue<HashMap<Long, List<String>>> reduceQueue = new LinkedList<>();
+	public Queue<HashMap<Long, List<String>>> getReduceQueue() {
 		return reduceQueue;
 	}
 
-	private HashMap<String, List<String>> reduceTakenList = new HashMap<>();
+	private HashMap<String, HashMap<Long, List<String>>> reduceTakenList = new HashMap<>();
 	public synchronized void removeFromReduceTakenList(String key) {
 		reduceTakenList.remove(key);
 	}
 
     @Override
-	public synchronized List<String> getReduceJob(String key) throws RemoteException{
-        List<String> reduceTaken = List.<String>of();
+	public synchronized HashMap<Long, List<String>> getReduceJob(String key) throws RemoteException{
+        HashMap<Long, List<String>> reduceTaken = new HashMap<>();
         try {
             if (!clientStubs.containsKey(key)) {
                 Registry registry = LocateRegistry.getRegistry(key, 1099);
@@ -112,7 +112,7 @@ public class StubImpl implements StubInterface {
 		return reduceTaken;
 	}
 
-	public synchronized HashMap<String, List<String>> getReduceTakenList() {
+	public synchronized HashMap<String, HashMap<Long, List<String>>> getReduceTakenList() {
 		return reduceTakenList;
 	}
 
@@ -176,6 +176,7 @@ public class StubImpl implements StubInterface {
 
     public void populateMapQueue(Config config) {
 		File[] files = new File(config.getInputDir()).listFiles();
+        long batchNum = 1;
         logger.info(this.type + ": " + this.name + " | Populating Map Queue...");
         if (files == null || files.length == 0) {
             logger.warn(this.type + ": " + this.name + " | No files found in directory: " + config.getInputDir());
@@ -186,8 +187,11 @@ public class StubImpl implements StubInterface {
             if (file.isFile()) {
                 batch.add(file.getAbsolutePath());
                 if (batch.size() == BATCH_SIZE_MAP) {
-                    mapQueue.offer(new ArrayList<>(batch));
+                    HashMap<Long, List<String>> batchMap = new HashMap<>();
+                    batchMap.put(batchNum, new ArrayList<>(batch));
+                    mapQueue.offer(batchMap);
                     batch.clear();
+                    batchNum++;
                 }
             } else {
                 logger.warn(this.type + ": " + this.name + " | ignoring "+ file.getAbsolutePath());
@@ -195,7 +199,9 @@ public class StubImpl implements StubInterface {
         }
         // Add any remaining files that didn't complete a full batch
         if (!batch.isEmpty()) {
-            mapQueue.offer(new ArrayList<>(batch));
+            HashMap<Long, List<String>> batchMap = new HashMap<>();
+            batchMap.put(batchNum, new ArrayList<>(batch));
+            mapQueue.offer(batchMap);
             batch.clear();
         }
         System.out.println("Batched " + files.length + " files into " + mapQueue.size() + " batches.");
@@ -205,6 +211,7 @@ public class StubImpl implements StubInterface {
     public void populateReduceQueue(Config config) {
         logger.info(this.type + ": " + this.name + " | Populating Reduce Queue...");
         File[] files = new File(config.getIntermediateDir()).listFiles();
+        long batchNum = 1;
         if (files == null || files.length == 0 ) {
             logger.warn(this.type + ": " + this.name + " | No intermediate files found in directory" + config.getIntermediateDir());
             return;
@@ -214,8 +221,11 @@ public class StubImpl implements StubInterface {
             if (file.isFile()) {
                 batch.add(file.getAbsolutePath());
                 if (batch.size() == BATCH_SIZE_REDUCE) {
-                    reduceQueue.offer(new ArrayList<>(batch));
+                    HashMap<Long, List<String>> batchMap = new HashMap<>();
+                    batchMap.put(batchNum, new ArrayList<>(batch));
+                    reduceQueue.offer(batchMap);
                     batch.clear();
+                    batchNum++;
                 }
             } else {
                 logger.warn(this.type + ": " + this.name + " | ignoring " + file.getAbsolutePath());
@@ -223,7 +233,9 @@ public class StubImpl implements StubInterface {
         }
         // Add any remaining files that didn't complete a full batch
         if (!batch.isEmpty()) {
-            reduceQueue.offer(new ArrayList<>(batch));
+            HashMap<Long, List<String>> batchMap = new HashMap<>();
+            batchMap.put(batchNum, new ArrayList<>(batch));
+            reduceQueue.offer(batchMap);
             batch.clear();
         }
         this.mapPhaseDone = true;

@@ -162,7 +162,7 @@ public final class WordCount implements MapReduceApplication {
 							logger.trace(this.mr.type + ": " + this.mr.name + " | Heartbeat " + entry.getKey());
 						} catch (Exception e) {
 							failedClients.add(entry.getKey());
-							logger.warn(this.mr.type + ": " + this.mr.name + " | Heartbeat Failed" + entry.getKey());
+							logger.warn(this.mr.type + ": " + this.mr.name + " | Heartbeat Failed " + entry.getKey());
 						}
 					}
 					for (String key : failedClients) {
@@ -210,7 +210,7 @@ public final class WordCount implements MapReduceApplication {
 			for (String key : killedClients) {
 				serverImpl.removeClient(key);
 			}
-			logger.info(this.mr.type + ": " + this.mr.name + " | Terminating Server");
+			logger.info(this.mr.type + ": " + this.mr.name + " | Terminated Server");
 			System.exit(0);
 		} else {
 			logger.info(this.mr.type + ": " + this.mr.name + " | Client started and thinks master is: " + Util.getCoordinatorHostname());

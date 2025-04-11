@@ -35,12 +35,16 @@ public class MapReduce {
 
 	private static MapReduceApplication userApplication;
 
-    private int currentIntermediateFileNumber = 0;
+	private int currentIntermediateFileNumber = 0;
+    private int currentIntermediateSize = 0;
+    // private final ArrayList<Tuple> currentIntermediateTuples = new ArrayList<Tuple>();
 	private final HashMap<String,Integer> currentIntermediateHashmap = new HashMap<String,Integer>(); 
 
     private int currentOutputFileNumber = 0;
     private int currentOutputSize = 0;
     private final ArrayList<Tuple> currentOutputTuples = new ArrayList<Tuple>();
+
+	private long batchKey;
 	public String name = Util.getMyHostname();
 	public String type = Util.amICoordinator() ? "COORDINATOR" : "WORKER";
 
@@ -140,10 +144,9 @@ public class MapReduce {
 	while (!isMapPhaseDone) {
 		start = System.nanoTime();
 		logger.debug(this.type + ": " + this.name + " | asking for work");
-		List<String> files = server.getMapJob(this.name);
-		if(!files.isEmpty()) {
-			logger.info(this.type + ": " + this.name + " | starting map job on: " + files.size() + " books.");
-			runMapPhase(files);
+		HashMap<Long, List<String>> job = server.getMapJob(this.name);
+		if(!job.isEmpty()) {
+			runMapPhase(job);
 			logger.debug(this.type + ": " + this.name + " | contacting server");
 			server.mapJobCompleted(this.name);
 			logger.debug(this.type + ": " + this.name + " | notified server");
@@ -170,11 +173,10 @@ public class MapReduce {
 
 	while (!isReducePhaseDone){
 		logger.debug(this.type + ": " + this.name + " | asking for work");
-		List<String> files = server.getReduceJob(this.name);
+		HashMap<Long, List<String>> job = server.getReduceJob(this.name);
 		start = System.nanoTime();
-		if (!files.isEmpty()){
-			logger.info(this.type + ": " + this.name + " | starting reduce job on: " + files.size() + " books.");
-			runReducePhase(files);
+		if (!job.isEmpty()){
+			runReducePhase(job);
 			logger.debug(this.type + ": " + this.name + " | contacting server");
 			server.reduceJobCompleted(this.name);
 			logger.debug(this.type + ": " + this.name + " | notified server");
@@ -209,15 +211,19 @@ public class MapReduce {
      * @param value The value accompanying this key
      * @throws IOException
      */
-    public void emitIntermediate(String key, String value) throws IOException {
-	// TODO use hashmap instead of tupple
-	if (!currentIntermediateHashmap.containsKey(key)){
-		if (currentIntermediateHashmap.size() >= 1024) {
+	public void emitIntermediate(String key, String value) throws IOException {
+
+		if (!currentIntermediateHashmap.containsKey(key)){
+			currentIntermediateSize += key.length() + 32;
+			if (currentIntermediateSize >= config.getIntermediateChunkSize()) {
+		// currentIntermediateSize += key.length() + value.length();
+		// if (currentIntermediateSize >= config.getIntermediateChunkSize()) {
 			flushIntermediate();
+			}
 		}
-	}
-	currentIntermediateHashmap.merge(key,Integer.parseInt(value),Integer::sum);
-    }
+			currentIntermediateHashmap.merge(key,Integer.parseInt(value),Integer::sum);
+		// currentIntermediateTuples.add(new Tuple(key, value));
+		}
 
     /**
      * The user reduce method should call this whenever it want to emit a
@@ -293,8 +299,12 @@ public class MapReduce {
      * 
      * @throws IOException
      */
-    private void runMapPhase(List<String> files) throws IOException {
-	for (String filePath : files) {
+    private void runMapPhase(HashMap<Long, List<String>> job) throws IOException {
+	HashMap.Entry<Long, List<String>> entry = job.entrySet().iterator().next();
+    this.batchKey = entry.getKey();
+	this.currentIntermediateFileNumber = 0;
+	logger.info(this.type + ": " + this.name + " | starting map job on: " + entry.getValue().size() + " books.");
+	for (String filePath : entry.getValue()) {
 	    logger.trace(this.type + ": " + this.name + " | mapping file: " + filePath);
 		File file = new File(filePath);
 	    try (BufferedReader in = new BufferedReader(new FileReader(file))) {
@@ -313,8 +323,12 @@ public class MapReduce {
      * 
      * @throws IOException
      */
-    private void runReducePhase(List<String> files) throws IOException {
-	for (String filePath : files) {
+    private void runReducePhase(HashMap<Long, List<String>> job) throws IOException {
+	HashMap.Entry<Long, List<String>> entry = job.entrySet().iterator().next();
+    this.batchKey = entry.getKey();
+	this.currentOutputFileNumber = 0;
+	logger.info(this.type + ": " + this.name + " | starting reduce job on: " + entry.getValue().size() + " books.");
+	for (String filePath : entry.getValue()) {
 		logger.trace(this.type + ": " + this.name + " | reducing file: " + filePath);
 		File file = new File(filePath);
 		reduceFile(file);
@@ -364,7 +378,7 @@ public class MapReduce {
      * @throws IOException
      */
     private void flushIntermediate() throws IOException {
-	String fileName = config.getIntermediateDir() + File.separator + this.name+ "_intermediate" + currentIntermediateFileNumber
+	String fileName = config.getIntermediateDir() + File.separator + this.batchKey+ "_intermediate" + currentIntermediateFileNumber
 		+ ".txt";
 	logger.trace(this.type + ": " + this.name + " | Flush intermediate: " + fileName);
 	currentIntermediateFileNumber++;
@@ -372,9 +386,14 @@ public class MapReduce {
 	try (BufferedWriter bw = new BufferedWriter(new FileWriter(fileName))) {
 		for (HashMap.Entry<String,Integer> entry: currentIntermediateHashmap.entrySet()){
 			bw.write(entry.getKey() + "|" + entry.getValue() + "\n");
-		}
+	    // for (int i = 0; i < currentIntermediateTuples.size(); i++) {
+		// Tuple t = currentIntermediateTuples.get(i);
+		// bw.write(t.key + "|" + t.value + "\n");
+	    }
 	} finally {
 		currentIntermediateHashmap.clear();
+	    // currentIntermediateTuples.clear();
+	    currentIntermediateSize = 0;
 	}
     }
 
@@ -390,7 +409,7 @@ public class MapReduce {
 	int myOutputFileNumber = currentOutputFileNumber;
 	currentOutputFileNumber++;
 
-	String fileName = config.getOutputDir() + File.separator + this.name + "_output" + myOutputFileNumber + ".txt";
+	String fileName = config.getOutputDir() + File.separator + this.batchKey + "_output" + myOutputFileNumber + ".txt";
 	File out = new File(fileName);
 
 	File tmpFile = File.createTempFile("tempOutput_" + myOutputFileNumber, ".txt", new File(config.getOutputDir()));
