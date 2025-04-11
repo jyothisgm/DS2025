@@ -4,6 +4,9 @@ import java.io.IOException;
 import java.rmi.AlreadyBoundException;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -97,11 +100,27 @@ public final class WordCount implements MapReduceApplication {
 			start = System.nanoTime();
 			while (!serverImpl.isTimePopulateReduce()) {
 				try {
+					List<String> failedClients = new ArrayList<>();
 					logger.trace(this.mr.type + ": " + this.mr.name + " | Sleeping for map phase");
 					Thread.sleep(50);
-					for (Map.Entry<String, StubInterface> entry : serverImpl.getClientStubs().entrySet()) {
-						entry.getValue().heartBeat(false);
-						logger.info(this.mr.type + ": " + this.mr.name + " | Heartbeat " + entry.getKey());
+					Iterator<Map.Entry<String, StubInterface>> iterator = serverImpl.getClientStubs().entrySet().iterator();
+					while (iterator.hasNext()) {
+						Map.Entry<String, StubInterface> entry = iterator.next();
+						boolean end = false;
+						try {
+							// Testing Random Worker Failures
+							if (Math.random() < 0.01 && serverImpl.getClientStubs().size() > 4 && failedClients.size() < 1) {
+								end = true;
+							}
+							entry.getValue().heartBeat(end);
+							logger.trace(this.mr.type + ": " + this.mr.name + " | Heartbeat " + entry.getKey());
+						} catch (Exception e) {
+							failedClients.add(entry.getKey());
+							logger.warn(this.mr.type + ": " + this.mr.name + " | Heartbeat Failed " + entry.getKey());
+						}
+					}
+					for (String key : failedClients) {
+						serverImpl.removeClient(key);
 					}
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
@@ -127,8 +146,28 @@ public final class WordCount implements MapReduceApplication {
 			start = System.nanoTime();
 			while(!serverImpl.isTimePostProcessing()){
 				try {
+					List<String> failedClients = new ArrayList<>();
 					logger.trace(this.mr.type + ": " + this.mr.name + " | Sleeping for reduce phase");
 					Thread.sleep(50);
+					Iterator<Map.Entry<String, StubInterface>> iterator = serverImpl.getClientStubs().entrySet().iterator();
+					while (iterator.hasNext()) {
+						Map.Entry<String, StubInterface> entry = iterator.next();
+						boolean end = false;
+						try {
+							// Testing Random Worker Failures
+							if (Math.random() < 0.01 && serverImpl.getClientStubs().size() > 2 && failedClients.size() < 1) {
+								end = true;
+							}
+							entry.getValue().heartBeat(end);
+							logger.trace(this.mr.type + ": " + this.mr.name + " | Heartbeat " + entry.getKey());
+						} catch (Exception e) {
+							failedClients.add(entry.getKey());
+							logger.warn(this.mr.type + ": " + this.mr.name + " | Heartbeat Failed" + entry.getKey());
+						}
+					}
+					for (String key : failedClients) {
+						serverImpl.removeClient(key);
+					}
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -155,6 +194,23 @@ public final class WordCount implements MapReduceApplication {
 			System.out.println("Total time: " + elapsed + " seconds.");
 
 			serverImpl.setPostProcessingDone();
+
+			List<String> killedClients = new ArrayList<>();
+			logger.info(this.mr.type + ": " + this.mr.name + " | Terminating Clients");
+			Iterator<Map.Entry<String, StubInterface>> iterator = serverImpl.getClientStubs().entrySet().iterator();
+			while (iterator.hasNext()) {
+				Map.Entry<String, StubInterface> entry = iterator.next();
+				try {
+					entry.getValue().heartBeat(true);
+				} catch (Exception e) {
+					killedClients.add(entry.getKey());
+					logger.info(this.mr.type + ": " + this.mr.name + " | Terminated Client " + entry.getKey());
+				}
+			}
+			for (String key : killedClients) {
+				serverImpl.removeClient(key);
+			}
+			logger.info(this.mr.type + ": " + this.mr.name + " | Terminating Server");
 			System.exit(0);
 		} else {
 			logger.info(this.mr.type + ": " + this.mr.name + " | Client started and thinks master is: " + Util.getCoordinatorHostname());
@@ -173,15 +229,15 @@ public final class WordCount implements MapReduceApplication {
 					}
 				}
 			}
-			// StubImpl clientImpl = new StubImpl();
-			// Registry reg = LocateRegistry.createRegistry(1099);
-			// StubInterface clientStub = (StubInterface) UnicastRemoteObject.exportObject(clientImpl, 1099);
-			// try {
-			// 	reg.bind(this.mr.name, clientStub);
-			// } catch (RemoteException | AlreadyBoundException e) {
-			// 	// TODO Auto-generated catch block
-			// 	e.printStackTrace();
-			// }
+			StubImpl clientImpl = new StubImpl();
+			Registry reg = LocateRegistry.createRegistry(1099);
+			StubInterface clientStub = (StubInterface) UnicastRemoteObject.exportObject(clientImpl, 1099);
+			try {
+				reg.bind(this.mr.name, clientStub);
+			} catch (RemoteException | AlreadyBoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			mr.mapReduce(server);
 		}
 	}

@@ -17,8 +17,6 @@ public interface StubInterface extends Remote {
 	 * passing grade for this assignment.
 	 *
 	 */
-	public void barrier() throws RemoteException;
-
 	public boolean heartBeat(boolean end) throws RemoteException;
 
     public List<String> getMapJob(String hostname) throws RemoteException;

@@ -1,10 +1,10 @@
 package ds.pa2;
 
 import java.io.File;
-// import java.rmi.NotBoundException;
+import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
-// import java.rmi.registry.LocateRegistry;
-// import java.rmi.registry.Registry;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -33,7 +33,7 @@ public class StubImpl implements StubInterface {
     public String type = Util.amICoordinator() ? "COORDINATOR" : "WORKER";
 
     private static Logger logger = LoggerFactory.getLogger(WordCount.class);
-    private HashMap<String, StubInterface> clientStubs;
+    private HashMap<String, StubInterface> clientStubs = new HashMap<>();
 
     public HashMap<String, StubInterface> getClientStubs() {
         return clientStubs;
@@ -45,20 +45,22 @@ public class StubImpl implements StubInterface {
 	}
 
 	private HashMap<String, List<String>> mapTakenList = new HashMap<>();
+
     @Override
 	public synchronized List<String> getMapJob(String key) throws RemoteException {
         List<String> mapTaken = List.<String>of();
-        // if (!clientStubs.containsKey(key)) {
-        //     Registry registry = LocateRegistry.getRegistry(key, 1099);
-        //     logger.debug(this.type + ": " + this.name + " | Server connected to " + key);
-        //     try {
-        //         StubInterface client = (StubInterface) registry.lookup(key);
-        //         clientStubs.put(key, client);
-        //     } catch (RemoteException | NotBoundException e) {
-        //         // TODO Auto-generated catch block
-        //         e.printStackTrace();
-        //     }
-        // }
+        try {
+            if (!clientStubs.containsKey(key)) {
+                Registry registry = LocateRegistry.getRegistry(key, 1099);
+                logger.debug(this.type + ": " + this.name + " | Server connected to " + key);
+                StubInterface client = (StubInterface) registry.lookup(key);
+                logger.debug(this.type + ": " + this.name + " | Server got stub " + key);
+                clientStubs.put(key, client);
+            }
+        } catch (NotBoundException e) {
+            logger.error(this.type + ": " + this.name + " | Error " + e);
+            e.printStackTrace();
+        }
         if (!this.getMapQueue().isEmpty()) {
             mapTaken = mapQueue.poll();
             this.mapTakenList.put(key, mapTaken);
@@ -91,6 +93,18 @@ public class StubImpl implements StubInterface {
     @Override
 	public synchronized List<String> getReduceJob(String key) throws RemoteException{
         List<String> reduceTaken = List.<String>of();
+        try {
+            if (!clientStubs.containsKey(key)) {
+                Registry registry = LocateRegistry.getRegistry(key, 1099);
+                logger.debug(this.type + ": " + this.name + " | Server connected to " + key);
+                StubInterface client = (StubInterface) registry.lookup(key);
+                logger.debug(this.type + ": " + this.name + " | Server got stub " + key);
+                clientStubs.put(key, client);
+            }
+        } catch (NotBoundException e) {
+            logger.error(this.type + ": " + this.name + " | Error " + e);
+            e.printStackTrace();
+        }
         if (!this.getReduceQueue().isEmpty()) {
             reduceTaken = reduceQueue.poll();
             this.reduceTakenList.put(key, reduceTaken);
@@ -106,10 +120,18 @@ public class StubImpl implements StubInterface {
         this.reducePhaseDone = true;
     }
 
-    @Override
-    public void barrier() throws RemoteException {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'barrier'");
+    public synchronized void removeClient(String key) {
+        clientStubs.remove(key);
+        if (mapTakenList.containsKey(key)) {
+            logger.debug(this.type + ": " + this.name + " | Client Map Failed " + key);
+            mapQueue.offer(mapTakenList.get(key));
+            mapTakenList.remove(key);
+        }
+        if (reduceTakenList.containsKey(key)) {
+            logger.debug(this.type + ": " + this.name + " | Client Reduce Failed " + key);
+            reduceQueue.offer(reduceTakenList.get(key));
+            reduceTakenList.remove(key);
+        }
     }
 
     @Override
