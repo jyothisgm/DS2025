@@ -66,6 +66,7 @@ public final class WordCount implements MapReduceApplication {
 	 */
 	@Override
 	public void start() throws IllegalArgumentException, IOException {
+		long numOfMaps, mapTime, numOfReduce, reduceTime;
 		if (Util.amICoordinator()) {
 			long startTime = System.nanoTime();
 			long start, elapsed;
@@ -79,7 +80,7 @@ public final class WordCount implements MapReduceApplication {
 			System.out.println("Populate Map Queue");
 	
 			start = System.nanoTime();
-			serverImpl.populateMapQueue(this.mr.getConfig());
+			numOfMaps = serverImpl.populateMapQueue(this.mr.getConfig());
 			elapsed = (System.nanoTime() - start) / 1000000;
 
 			logger.info(this.mr.type + ": " + this.mr.name + " | Map Queue Populated. Took: " + elapsed + " milliseconds.");
@@ -109,9 +110,9 @@ public final class WordCount implements MapReduceApplication {
 						boolean end = false;
 						try {
 							// Testing Random Worker Failures
-							if (Math.random() < 0.01 && serverImpl.getClientStubs().size() > 4 && failedClients.size() < 1) {
-								end = true;
-							}
+							// if (Math.random() < 0.01 && serverImpl.getClientStubs().size() > 4 && failedClients.size() < 1) {
+							// 	end = true;
+							// }
 							entry.getValue().heartBeat(end);
 							logger.trace(this.mr.type + ": " + this.mr.name + " | Heartbeat " + entry.getKey());
 						} catch (Exception e) {
@@ -127,14 +128,14 @@ public final class WordCount implements MapReduceApplication {
 					e.printStackTrace();
 				}
 			}
-			elapsed = (System.nanoTime() - start) / 1000000;
-			logger.info(this.mr.type + ": " + this.mr.name + " | Map Phase Done. Took: " + elapsed + " milliseconds.");
-			System.out.println("Map Phase Done. Took: " + elapsed + " milliseconds.");
+			mapTime = (System.nanoTime() - start) / 1000000;
+			logger.info(this.mr.type + ": " + this.mr.name + " | Map Phase Done. Took: " + mapTime + " milliseconds.");
+			System.out.println("Map Phase Done. Took: " + mapTime + " milliseconds.");
 	
 			logger.info(this.mr.type + ": " + this.mr.name + " | Populate Reduce Queue");
 			System.out.println("Populate Reduce Queue");
 			start = System.nanoTime();
-			serverImpl.populateReduceQueue(this.mr.getConfig());
+			numOfReduce = serverImpl.populateReduceQueue(this.mr.getConfig());
 			elapsed = (System.nanoTime() - start) / 1000000;
 			logger.info(this.mr.type + ": " + this.mr.name + " | Reduce Queue Populated. Took: " + elapsed + " milliseconds.");
 			System.out.println("Reduce Queue Populated. Took: " + elapsed + " milliseconds.");
@@ -155,9 +156,9 @@ public final class WordCount implements MapReduceApplication {
 						boolean end = false;
 						try {
 							// Testing Random Worker Failures
-							if (Math.random() < 0.01 && serverImpl.getClientStubs().size() > 2 && failedClients.size() < 1) {
-								end = true;
-							}
+							// if (Math.random() < 0.01 && serverImpl.getClientStubs().size() > 2 && failedClients.size() < 1) {
+							// 	end = true;
+							// }
 							entry.getValue().heartBeat(end);
 							logger.trace(this.mr.type + ": " + this.mr.name + " | Heartbeat " + entry.getKey());
 						} catch (Exception e) {
@@ -173,9 +174,9 @@ public final class WordCount implements MapReduceApplication {
 					e.printStackTrace();
 				}
 			}	
-			elapsed = (System.nanoTime() - start) / 1000000;
-			logger.info(this.mr.type + ": " + this.mr.name + " | Reduce Phase Done. Took: " + elapsed + " milliseconds.");
-			System.out.println("Reduce Phase Done. Took: " + elapsed + " milliseconds.");
+			reduceTime = (System.nanoTime() - start) / 1000000;
+			logger.info(this.mr.type + ": " + this.mr.name + " | Reduce Phase Done. Took: " + reduceTime + " milliseconds.");
+			System.out.println("Reduce Phase Done. Took: " + reduceTime + " milliseconds.");
 
 			// Set reduce phase over
 			serverImpl.setReducePhaseDone();
@@ -184,31 +185,36 @@ public final class WordCount implements MapReduceApplication {
 			System.out.println("Post Processing Phase Started");
 
 			start = System.nanoTime();
-			this.mr.runPostProcessingPhase();
-			elapsed = (System.nanoTime() - start) / 1000000;
-			logger.info(this.mr.type + ": " + this.mr.name + " | Post Processing Phase Done. Took: " + elapsed + " milliseconds.");
-			System.out.println("Post Processing Phase Done. Took: " + elapsed + " milliseconds.");
+			long numOut = this.mr.runPostProcessingPhase();
+			long postProcessTime = (System.nanoTime() - start) / 1000000;
+			logger.info(this.mr.type + ": " + this.mr.name + " | Post Processing Phase Done. Took: " + postProcessTime + " milliseconds.");
+			System.out.println("Post Processing Phase Done. Took: " + postProcessTime + " milliseconds.");
 
-			elapsed = (System.nanoTime() - startTime) / 1000000 / 1000;
-			logger.info(this.mr.type + ": " + this.mr.name + " | Total time: " + elapsed + " seconds.");
-			System.out.println("Total time: " + elapsed + " seconds.");
+			elapsed = (System.nanoTime() - startTime) / 1000000;
+			logger.info(this.mr.type + ": " + this.mr.name + " | Total time: " + elapsed + " milliseconds.");
+			System.out.println("Total time: " + elapsed + " milliseconds.");
 
 			serverImpl.setPostProcessingDone();
 
 			List<String> killedClients = new ArrayList<>();
+			System.out.println("Node,Type,NumOfMaps,MapTime,NumOfReduce,ReduceTime,NumOfOutputFiles,PostProcessingTime,TotalTime");
+			System.out.printf("%s,%s,%d,%d,%d,%d,%d,%d,%d\n",
+					this.mr.name, "Coordinator", numOfMaps, mapTime, numOfReduce, reduceTime, numOut, postProcessTime, elapsed);
 			logger.info(this.mr.type + ": " + this.mr.name + " | Terminating Clients");
-			Iterator<Map.Entry<String, StubInterface>> iterator = serverImpl.getClientStubs().entrySet().iterator();
-			while (iterator.hasNext()) {
-				Map.Entry<String, StubInterface> entry = iterator.next();
-				try {
-					entry.getValue().heartBeat(true);
-				} catch (Exception e) {
-					killedClients.add(entry.getKey());
-					logger.info(this.mr.type + ": " + this.mr.name + " | Terminated Client " + entry.getKey());
+			while (serverImpl.getClientStubs().size() > 0) {
+				Iterator<Map.Entry<String, StubInterface>> iterator = serverImpl.getClientStubs().entrySet().iterator();
+				while (iterator.hasNext()) {
+					Map.Entry<String, StubInterface> entry = iterator.next();
+					try {
+						entry.getValue().heartBeat(false);
+					} catch (Exception e) {
+						killedClients.add(entry.getKey());
+						logger.info(this.mr.type + ": " + this.mr.name + " | Terminated Client " + entry.getKey());
+					}
 				}
-			}
-			for (String key : killedClients) {
-				serverImpl.removeClient(key);
+				for (String key : killedClients) {
+					serverImpl.removeClient(key);
+				}
 			}
 			logger.info(this.mr.type + ": " + this.mr.name + " | Terminated Server");
 			System.exit(0);
@@ -239,6 +245,7 @@ public final class WordCount implements MapReduceApplication {
 				e.printStackTrace();
 			}
 			mr.mapReduce(server);
+			System.exit(0);
 		}
 	}
 

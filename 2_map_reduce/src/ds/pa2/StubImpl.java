@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,9 +23,6 @@ import org.slf4j.LoggerFactory;
  * TODO: You have to modify and extend this file.
  */
 public class StubImpl implements StubInterface {
-    private int BATCH_SIZE_MAP = 32;
-    private int BATCH_SIZE_REDUCE = 32;
-
     private boolean mapPhaseDone = false;
     private boolean reducePhaseDone = false;
     private boolean postProcessingDone = false;
@@ -33,9 +31,9 @@ public class StubImpl implements StubInterface {
     public String type = Util.amICoordinator() ? "COORDINATOR" : "WORKER";
 
     private static Logger logger = LoggerFactory.getLogger(WordCount.class);
-    private HashMap<String, StubInterface> clientStubs = new HashMap<>();
+    private ConcurrentHashMap<String, StubInterface> clientStubs = new ConcurrentHashMap<>();
 
-    public HashMap<String, StubInterface> getClientStubs() {
+    public ConcurrentHashMap<String, StubInterface> getClientStubs() {
         return clientStubs;
     }
 
@@ -174,19 +172,20 @@ public class StubImpl implements StubInterface {
         this.postProcessingDone = true;
     }
 
-    public void populateMapQueue(Config config) {
+    public int populateMapQueue(Config config) {
 		File[] files = new File(config.getInputDir()).listFiles();
-        long batchNum = 1;
         logger.info(this.type + ": " + this.name + " | Populating Map Queue...");
         if (files == null || files.length == 0) {
             logger.warn(this.type + ": " + this.name + " | No files found in directory: " + config.getInputDir());
-            return;
+            return 0;
         }
         List<String> batch = new ArrayList<>();
+        long batchNum = 1;
+        int batch_size = files.length/(Util.getNrClients()*2);
         for (File file : files) {
             if (file.isFile()) {
                 batch.add(file.getAbsolutePath());
-                if (batch.size() == BATCH_SIZE_MAP) {
+                if (batch.size() == batch_size) {
                     HashMap<Long, List<String>> batchMap = new HashMap<>();
                     batchMap.put(batchNum, new ArrayList<>(batch));
                     mapQueue.offer(batchMap);
@@ -206,21 +205,23 @@ public class StubImpl implements StubInterface {
         }
         System.out.println("Batched " + files.length + " files into " + mapQueue.size() + " batches.");
         logger.info(this.type + ": " + this.name + " | Batched " + files.length + " files into " + mapQueue.size() + " batches.");
+        return mapQueue.size();
     }
 
-    public void populateReduceQueue(Config config) {
+    public int populateReduceQueue(Config config) {
         logger.info(this.type + ": " + this.name + " | Populating Reduce Queue...");
         File[] files = new File(config.getIntermediateDir()).listFiles();
-        long batchNum = 1;
         if (files == null || files.length == 0 ) {
             logger.warn(this.type + ": " + this.name + " | No intermediate files found in directory" + config.getIntermediateDir());
-            return;
+            return 0;
         }
+        int batch_size = files.length/(Util.getNrClients()*2);
+        long batchNum = 1;
         List<String> batch = new ArrayList<>();
         for (File file : files) {
             if (file.isFile()) {
                 batch.add(file.getAbsolutePath());
-                if (batch.size() == BATCH_SIZE_REDUCE) {
+                if (batch.size() == batch_size) {
                     HashMap<Long, List<String>> batchMap = new HashMap<>();
                     batchMap.put(batchNum, new ArrayList<>(batch));
                     reduceQueue.offer(batchMap);
@@ -241,6 +242,7 @@ public class StubImpl implements StubInterface {
         this.mapPhaseDone = true;
         System.out.println("Batched " + files.length + " intermediate files into " + reduceQueue.size() + " batches.");
         logger.info(this.type + ": " + this.name + " | Batched " + files.length + " intermediate files into " + reduceQueue.size() + " batches.");
+        return reduceQueue.size();
     }
     @Override
     public void mapJobCompleted(String hostname) throws RemoteException {

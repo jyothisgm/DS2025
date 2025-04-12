@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# for size in 2 4 8 12 16
-for size in 8
+for size in 2 4 8 12 16
+# for size in 8
 do
   rm -rf /var/scratch/$USER/intermediate /var/scratch/$USER/output
   mkdir -p /var/scratch/$USER/intermediate

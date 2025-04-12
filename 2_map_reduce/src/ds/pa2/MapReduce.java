@@ -138,8 +138,9 @@ public class MapReduce {
 		    "You forgot to provide a Config to mapReduce via the method configure()");
 	}
 
-	long start, elapsed, totalTime = 0;
+	long numOfMaps = 0, mapTime = 0, numOfReduce = 0, reduceTime = 0, startTime, start, elapsed;
 	logger.info(this.type + ": " + this.name + " | starting map phase");
+	startTime = System.nanoTime();
 	boolean isMapPhaseDone = false;
 	while (!isMapPhaseDone) {
 		start = System.nanoTime();
@@ -152,11 +153,12 @@ public class MapReduce {
 			logger.debug(this.type + ": " + this.name + " | notified server");
 
 			elapsed = (System.nanoTime() - start) / 1000000;
-			totalTime += elapsed;
-			logger.info(this.type + ": " + this.name + " | map job took: " + elapsed + " milliseconds.");
+			mapTime += elapsed;
+			numOfMaps++;
+			logger.info(this.type + ": " + this.name + " | map job took: " + elapsed + " milliseconds" + numOfMaps + " operations");
 		} else {
 			try {
-				logger.debug(this.type + ": " + this.name + " | sleeping after reduce for 100 milliseconds");
+				logger.debug(this.type + ": " + this.name + " | sleeping after map for 100 milliseconds");
 				Thread.sleep(100);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
@@ -167,7 +169,7 @@ public class MapReduce {
 		logger.debug(this.type + ": " + this.name + " | Is map phase done?: " + isMapPhaseDone);
 	}
 
-	logger.info(this.type + ": " + this.name + " | map phase took:" + totalTime + " milliseconds.");
+	logger.info(this.type + ": " + this.name + " | map phase took:" + mapTime + " milliseconds.");
 	logger.info(this.type + ": " + this.name + " | starting reduce phase");
 	boolean isReducePhaseDone = false;
 
@@ -182,7 +184,8 @@ public class MapReduce {
 			logger.debug(this.type + ": " + this.name + " | notified server");
 
 			elapsed = (System.nanoTime() - start) / 1000000;
-			totalTime += elapsed;
+			reduceTime += elapsed;
+			numOfReduce++;
 			logger.info(this.type + ": " + this.name + " | Reduce job took: " + elapsed + " milliseconds.");
 		} else {
 			try { 
@@ -195,8 +198,22 @@ public class MapReduce {
 		}
 		isReducePhaseDone = server.isReducePhaseDone();
 	}
-
-	logger.info(this.type + ": " + this.name + " | Total application time is: " + totalTime + " milliseconds.");
+	elapsed = (System.nanoTime() - startTime) / 1000000;
+	logger.info(this.type + ": " + this.name + " | reduce phase took:" + reduceTime + " milliseconds for " + numOfReduce + " operations");
+	logger.info(this.type + ": " + this.name + " | Total application time is: " + elapsed + " milliseconds. Did " + numOfMaps +
+				" map operations and " + numOfReduce + " reduce operations");
+	boolean isPostProcessingOver = server.isPostProcessingDone();
+	while (!isPostProcessingOver){
+		try {
+			// logger.info(this.name + " | waiting for postprocessing to finish for 1 sec");
+			Thread.sleep(1000);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		isPostProcessingOver = server.isPostProcessingDone();
+	}
+	System.out.printf("%s,%s,%d,%d,%d,%d,%d,%d,%d\n", this.name, "Worker", numOfMaps, mapTime, numOfReduce, reduceTime, 0, 0, elapsed);
     }
 
     /**
@@ -437,7 +454,7 @@ public class MapReduce {
      * 
      * @throws IOException
      */
-    public void runPostProcessingPhase() throws IOException {
+    public int runPostProcessingPhase() throws IOException {
 	File[] files = new File(config.getOutputDir()).listFiles();
 	logger.info(this.type + ": " + this.name + " | post processing files: " + files.length);
 	for (File f : files) {
@@ -475,6 +492,7 @@ public class MapReduce {
 
 	logger.info(this.type + ": " + this.name + " | Rename temp output " + tmpFile.getName() + " to output: " + fileName);
 	java.nio.file.Files.move(tmpFile.toPath(), out.toPath(), StandardCopyOption.ATOMIC_MOVE);
+	return files.length;
     }
 
     /**
