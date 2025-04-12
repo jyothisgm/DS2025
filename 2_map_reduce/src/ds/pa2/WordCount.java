@@ -75,10 +75,10 @@ public final class WordCount implements MapReduceApplication {
 			System.out.println("Starting Coordinator");
 
 			StubImpl serverImpl = new StubImpl();
-			
+
 			logger.info(this.mr.type + ": " + this.mr.name + " | Populate Map Queue");
 			System.out.println("Populate Map Queue");
-	
+
 			start = System.nanoTime();
 			numOfMaps = serverImpl.populateMapQueue(this.mr.getConfig());
 			elapsed = (System.nanoTime() - start) / 1000000;
@@ -131,7 +131,7 @@ public final class WordCount implements MapReduceApplication {
 			mapTime = (System.nanoTime() - start) / 1000000;
 			logger.info(this.mr.type + ": " + this.mr.name + " | Map Phase Done. Took: " + mapTime + " milliseconds.");
 			System.out.println("Map Phase Done. Took: " + mapTime + " milliseconds.");
-	
+
 			logger.info(this.mr.type + ": " + this.mr.name + " | Populate Reduce Queue");
 			System.out.println("Populate Reduce Queue");
 			start = System.nanoTime();
@@ -173,7 +173,7 @@ public final class WordCount implements MapReduceApplication {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-			}	
+			}
 			reduceTime = (System.nanoTime() - start) / 1000000;
 			logger.info(this.mr.type + ": " + this.mr.name + " | Reduce Phase Done. Took: " + reduceTime + " milliseconds.");
 			System.out.println("Reduce Phase Done. Took: " + reduceTime + " milliseconds.");
@@ -198,7 +198,7 @@ public final class WordCount implements MapReduceApplication {
 
 			List<String> killedClients = new ArrayList<>();
 			System.out.println("NClients,Node,Type,NumOfMaps,MapTime,NumOfReduce,ReduceTime,NumOfOutputFiles,PostProcessingTime,TotalTime");
-			System.out.printf("%s,%s,%s,%d,%d,%d,%d,%d,%d,%d\n", Util.getNrClients(), this.mr.name, "Coordinator", 
+			System.out.printf("%s,%s,%s,%d,%d,%d,%d,%d,%d,%d\n", Util.getNrClients(), this.mr.name, "Coordinator",
 					numOfMaps, mapTime, numOfReduce, reduceTime, numOut, postProcessTime, elapsed);
 			logger.info(this.mr.type + ": " + this.mr.name + " | Terminating Clients");
 			while (serverImpl.getClientStubs().size() > 0) {

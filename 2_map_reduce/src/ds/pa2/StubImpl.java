@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
  * TODO: You have to modify and extend this file.
  */
 public class StubImpl implements StubInterface {
-    private int batchNormalizer = 2;
+    private int batchNormalizer = 10;
     private boolean mapPhaseDone = false;
     private boolean reducePhaseDone = false;
     private boolean postProcessingDone = false;

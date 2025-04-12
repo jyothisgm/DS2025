@@ -39,10 +39,10 @@ public class MapReduce {
     private int currentIntermediateSize = 0;
 
 	// For Mapping files as Tuples
-    // private final ArrayList<Tuple> currentIntermediateTuples = new ArrayList<Tuple>();
+    private final ArrayList<Tuple> currentIntermediateTuples = new ArrayList<Tuple>();
 
 	// For Mapping files as Hashmaps
-	private final HashMap<String,Integer> currentIntermediateHashmap = new HashMap<String,Integer>(); 
+	// private final HashMap<String,Integer> currentIntermediateHashmap = new HashMap<String,Integer>();
 
     private int currentOutputFileNumber = 0;
     private int currentOutputSize = 0;
@@ -192,7 +192,7 @@ public class MapReduce {
 			numOfReduce++;
 			logger.info(this.type + ": " + this.name + " | Reduce job took: " + elapsed + " milliseconds.");
 		} else {
-			try { 
+			try {
 				logger.debug(this.type + ": " + this.name + " | sleeping after reduce for 100 milliseconds");
 				Thread.sleep(100);
 			} catch (InterruptedException e) {
@@ -234,21 +234,21 @@ public class MapReduce {
      */
 	public void emitIntermediate(String key, String value) throws IOException {
 		// For Mapping files as Tuples
-		// currentIntermediateSize += key.length() + value.length();
+		currentIntermediateSize += key.length() + value.length();
 
 		// For Mapping files as Hashmaps
-		if (!currentIntermediateHashmap.containsKey(key)){
-		currentIntermediateSize += key.length() + 32;
+		// if (!currentIntermediateHashmap.containsKey(key)){
+		// currentIntermediateSize += key.length() + 32;
 
 		if (currentIntermediateSize >= config.getIntermediateChunkSize()) {
 			flushIntermediate();
 		}
-		}
+		// }
 		// For Mapping files as Tuples
-		// currentIntermediateTuples.add(new Tuple(key, value));
+		currentIntermediateTuples.add(new Tuple(key, value));
 
 		// For Mapping files as Hashmaps
-		currentIntermediateHashmap.merge(key,Integer.parseInt(value),Integer::sum);
+		// currentIntermediateHashmap.merge(key,Integer.parseInt(value),Integer::sum);
 	}
 
     /**
@@ -276,7 +276,7 @@ public class MapReduce {
      * key,value-pair to the final output file. Note that this method will buffer
      * all key/value-pairs in memory until the application is done. Only then will
      * it actually perform the real write. This is done for efficiency reasons.
-     * 
+     *
      * @param key   The key to be stored.
      * @param value The value accompanying this key
      * @throws IOException
@@ -411,21 +411,21 @@ public class MapReduce {
 
 	try (BufferedWriter bw = new BufferedWriter(new FileWriter(fileName))) {
 		// For Mapping files as Tuples
-	    // for (int i = 0; i < currentIntermediateTuples.size(); i++) {
-		// 	Tuple t = currentIntermediateTuples.get(i);
-		// 	bw.write(t.key + "|" + t.value + "\n");
-		// }
+	    for (int i = 0; i < currentIntermediateTuples.size(); i++) {
+			Tuple t = currentIntermediateTuples.get(i);
+			bw.write(t.key + "|" + t.value + "\n");
+		}
 
 		// For Mapping files as Hashmaps
-		for (HashMap.Entry<String,Integer> entry: currentIntermediateHashmap.entrySet()) {
-			bw.write(entry.getKey() + "|" + entry.getValue() + "\n");
-	    }
+		// for (HashMap.Entry<String,Integer> entry: currentIntermediateHashmap.entrySet()) {
+		// 	bw.write(entry.getKey() + "|" + entry.getValue() + "\n");
+	    // }
 	} finally {
 		// For Mapping files as Tuples
-	    // currentIntermediateTuples.clear();
+	    currentIntermediateTuples.clear();
 
 		// For Mapping files as Hashmaps
-		currentIntermediateHashmap.clear();
+		// currentIntermediateHashmap.clear();
 
 	    currentIntermediateSize = 0;
 	}
