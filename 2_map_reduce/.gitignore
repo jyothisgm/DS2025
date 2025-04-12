@@ -11,4 +11,5 @@ logs/
 archive/*
 err*
 *out*
-results.csv
+*.csv
+*.png

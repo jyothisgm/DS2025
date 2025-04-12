@@ -242,7 +242,6 @@ public class MapReduce {
 
 		if (currentIntermediateSize >= config.getIntermediateChunkSize()) {
 			flushIntermediate();
-
 		}
 		}
 		// For Mapping files as Tuples

@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
  * TODO: You have to modify and extend this file.
  */
 public class StubImpl implements StubInterface {
+    private int batchNormalizer = 2;
     private boolean mapPhaseDone = false;
     private boolean reducePhaseDone = false;
     private boolean postProcessingDone = false;
@@ -181,11 +182,11 @@ public class StubImpl implements StubInterface {
         }
         List<String> batch = new ArrayList<>();
         long batchNum = 1;
-        int batch_size = files.length/(Util.getNrClients()*2);
+        int batchSize = (files.length + Util.getNrClients() * batchNormalizer - 1) / (Util.getNrClients() * batchNormalizer);
         for (File file : files) {
             if (file.isFile()) {
                 batch.add(file.getAbsolutePath());
-                if (batch.size() == batch_size) {
+                if (batch.size() == batchSize) {
                     HashMap<Long, List<String>> batchMap = new HashMap<>();
                     batchMap.put(batchNum, new ArrayList<>(batch));
                     mapQueue.offer(batchMap);
@@ -215,13 +216,13 @@ public class StubImpl implements StubInterface {
             logger.warn(this.type + ": " + this.name + " | No intermediate files found in directory" + config.getIntermediateDir());
             return 0;
         }
-        int batch_size = files.length/(Util.getNrClients()*2);
+        int batchSize = (files.length + Util.getNrClients() * batchNormalizer - 1) / (Util.getNrClients() * batchNormalizer);
         long batchNum = 1;
         List<String> batch = new ArrayList<>();
         for (File file : files) {
             if (file.isFile()) {
                 batch.add(file.getAbsolutePath());
-                if (batch.size() == batch_size) {
+                if (batch.size() == batchSize) {
                     HashMap<Long, List<String>> batchMap = new HashMap<>();
                     batchMap.put(batchNum, new ArrayList<>(batch));
                     reduceQueue.offer(batchMap);

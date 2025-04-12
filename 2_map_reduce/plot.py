@@ -1,31 +1,39 @@
 # %%
 import matplotlib.pyplot as plt
 import pandas as pd
+import glob
+
+# Get list of all matching CSV files
+csv_files = glob.glob("*.csv")
 
 print("Reading data")
-eth = pd.read_csv("results.csv", index_col=False)
-# ib = pd.read_csv("results_ib.csv", index_col=False)
+eth_list = [(f, pd.read_csv(f, index_col=False)) for f in csv_files]
 
 print("Plotting results")
 # %%
 # Plot
-ax = eth.set_index('NClients')[['MapTime', 'ReduceTime', 'PostProcessingTime', 'TotalTime']].plot(
-    figsize=(10, 6),
-    marker='o',
-    logy=True
-)
+plt.figure(figsize=(12, 8))
 
-# Set custom y-ticks so values are visible
-yticks = [1000, 2000, 4000, 8000, 16000, 32000, 40000]
-ax.set_yticks(yticks)
-ax.set_yticklabels([str(y) for y in yticks])
+# Define colors or markers if needed
 
-# Labels and title
-plt.title('Time Metrics vs Number of Clients (Log Scale)')
+metrics = ['MapTime', 'ReduceTime', 'PostProcessingTime', 'TotalTime']
+yticks = [1000, 2000, 4000, 8000, 16000, 32000, 48000, 64000, 90000]
+
+for filename, df in eth_list:
+    for metric in metrics:
+        label = f"{metric} - {filename.split(".")[0]}"
+        plt.plot(df['NClients'], df[metric], marker='o', label=label)
+
+
+# Apply log scale and custom ticks
+plt.yscale('log')
+plt.yticks(yticks, [f"{int(y/1000)}" for y in yticks])
 plt.xlabel('Number of Clients')
-plt.ylabel('Time (ms)')
-plt.grid(True, which="both", linestyle="--", linewidth=0.5)
-plt.legend(title="Metric")
+plt.ylabel('Time (s)')
+plt.title('Time Metrics vs Number of Clients (All Files)')
+
+plt.grid(True, which='both', linestyle='--', linewidth=0.5)
+plt.legend()
 plt.tight_layout()
 plt.show()
 # %%
