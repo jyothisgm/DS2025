@@ -213,7 +213,7 @@ public class MapReduce {
 		}
 		isPostProcessingOver = server.isPostProcessingDone();
 	}
-	System.out.printf("%s,%s,%d,%d,%d,%d,%d,%d,%d\n", this.name, "Worker", numOfMaps, mapTime, numOfReduce, reduceTime, 0, 0, elapsed);
+	System.out.printf("%s,%s,%s,%d,%d,%d,%d,%d,%d,%d\n", Util.getNrClients(), this.name, "Worker", numOfMaps, mapTime, numOfReduce, reduceTime, 0, 0, elapsed);
     }
 
     /**

@@ -7,3 +7,8 @@
 
 .vscode/
 logs/
+
+archive/*
+err*
+*out*
+results.csv

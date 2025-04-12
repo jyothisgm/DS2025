@@ -197,9 +197,9 @@ public final class WordCount implements MapReduceApplication {
 			serverImpl.setPostProcessingDone();
 
 			List<String> killedClients = new ArrayList<>();
-			System.out.println("Node,Type,NumOfMaps,MapTime,NumOfReduce,ReduceTime,NumOfOutputFiles,PostProcessingTime,TotalTime");
-			System.out.printf("%s,%s,%d,%d,%d,%d,%d,%d,%d\n",
-					this.mr.name, "Coordinator", numOfMaps, mapTime, numOfReduce, reduceTime, numOut, postProcessTime, elapsed);
+			System.out.println("NClients,Node,Type,NumOfMaps,MapTime,NumOfReduce,ReduceTime,NumOfOutputFiles,PostProcessingTime,TotalTime");
+			System.out.printf("%s,%s,%s,%d,%d,%d,%d,%d,%d,%d\n", Util.getNrClients(), this.mr.name, "Coordinator", 
+					numOfMaps, mapTime, numOfReduce, reduceTime, numOut, postProcessTime, elapsed);
 			logger.info(this.mr.type + ": " + this.mr.name + " | Terminating Clients");
 			while (serverImpl.getClientStubs().size() > 0) {
 				Iterator<Map.Entry<String, StubInterface>> iterator = serverImpl.getClientStubs().entrySet().iterator();
