@@ -72,33 +72,33 @@ public class MapReduce {
      * @param args
      */
     public static void main(String[] args) {
-    if (args.length != 4) {
-        System.err.println(
-            "Usage: java ds.pa2.MapReduce <application class name> <input dir> <intermediate dir> <output dir>");
-        System.exit(1);
-    }
+	if (args.length != 4) {
+	    System.err.println(
+		    "Usage: java ds.pa2.MapReduce <application class name> <input dir> <intermediate dir> <output dir>");
+	    System.exit(1);
+	}
 
-    // We will now find the Class containing the user program, based on the name
-    // provided by the user.
-    // Next, we instantiate that class and call the default constructor (without
-    // arguments)
-    try {
-        Class<?> appClass = Class.forName(args[0]);
-        userApplication = (MapReduceApplication) appClass.getDeclaredConstructor().newInstance();
-    } catch (Exception e) {
-        System.err.println("Cannot find the constructor of the main class " + args[0] + ": " + e);
-        System.exit(1);
-    }
+	// We will now find the Class containing the user program, based on the name
+	// provided by the user.
+	// Next, we instantiate that class and call the default constructor (without
+	// arguments)
+	try {
+	    Class<?> appClass = Class.forName(args[0]);
+	    userApplication = (MapReduceApplication) appClass.getDeclaredConstructor().newInstance();
+	} catch (Exception e) {
+	    System.err.println("Cannot find the constructor of the main class " + args[0] + ": " + e);
+	    System.exit(1);
+	}
 
-    // We now create a new MapReduce object that will handle all IO and scheduling.
-    // Finally, we call start on the user application, to give control to the
-    // application.
-    // It should create a configuration and invoke mapReduce() when it has
-    // initialized its data structures.
-    logger.info("starting user application: " + args[0]);
-    try {
+	// We now create a new MapReduce object that will handle all IO and scheduling.
+	// Finally, we call start on the user application, to give control to the
+	// application.
+	// It should create a configuration and invoke mapReduce() when it has
+	// initialized its data structures.
+	logger.info("starting user application: " + args[0]);
+	try {
         MapReduce mr = new MapReduce();
-        userApplication.configure(mr, args);
+	    userApplication.configure(mr, args);
 
         stubImpl = new StubImpl();
         Registry reg = LocateRegistry.createRegistry(1099);
@@ -115,7 +115,7 @@ public class MapReduce {
         if (Util.amICoordinator()) {
             logger.info(mr.type + ": " + mr.name + " | Starting Coordinator");
             System.out.println("Starting Coordinator");
-            userApplication.start();
+	        userApplication.start();
 
             stubImpl.setPostProcessingDone();
             List<String> killedClients = new ArrayList<>();
@@ -141,11 +141,11 @@ public class MapReduce {
             runClient(mr);
             System.exit(0);
         }
-    } catch (IllegalArgumentException | IOException | NotBoundException e) {
-        System.err.println("An error occurred: " + e.getMessage());
-        e.printStackTrace();
-        System.exit(1);
-    }
+	} catch (IllegalArgumentException | IOException | NotBoundException e) {
+	    System.err.println("An error occurred: " + e.getMessage());
+	    e.printStackTrace();
+	    System.exit(1);
+	}
     }
 
     /**
@@ -161,12 +161,12 @@ public class MapReduce {
      * @throws IllegalArgumentException
      */
     public void configure(Config config) throws IOException, IllegalArgumentException {
-    this.config = config;
+	this.config = config;
 
-    // validate config
-    checkExists(config.getInputDir());
-    checkExists(config.getIntermediateDir());
-    checkExists(config.getOutputDir());
+	// validate config
+	checkExists(config.getInputDir());
+	checkExists(config.getIntermediateDir());
+	checkExists(config.getOutputDir());
     }
 
     private static void runClient(MapReduce mr) throws NotBoundException, IOException {
@@ -283,10 +283,10 @@ public class MapReduce {
      * 
      */
     public void mapReduce() throws IOException, IllegalArgumentException {
-        if (config == null) {
-            throw new IllegalArgumentException(
-                "You forgot to provide a Config to mapReduce via the method configure()");
-        }
+	if (config == null) {
+	    throw new IllegalArgumentException(
+		    "You forgot to provide a Config to mapReduce via the method configure()");
+	}
 
         long startTime = System.nanoTime();
         long start, elapsed;
@@ -418,11 +418,12 @@ public class MapReduce {
      * @throws IOException
      */
     public void emitIntermediate(String key, String value) throws IOException {
-        currentIntermediateSize += key.length() + value.length();
-        if (currentIntermediateSize >= config.getIntermediateChunkSize()) {
-            flushIntermediate();
-        }
-        currentIntermediateTuples.add(new Tuple(key, value));
+	currentIntermediateSize += key.length() + value.length();
+	if (currentIntermediateSize >= config.getIntermediateChunkSize()) {
+	    flushIntermediate();
+	}
+
+	currentIntermediateTuples.add(new Tuple(key, value));
     }
 
     /**
@@ -437,12 +438,12 @@ public class MapReduce {
      * @throws IOException
      */
     public void emitOutput(String key, String value) throws IOException {
-    currentOutputSize += key.length() + value.length();
-    if (currentOutputSize >= config.getOutputChunkSize()) {
-        flushOutput();
-    }
+	currentOutputSize += key.length() + value.length();
+	if (currentOutputSize >= config.getOutputChunkSize()) {
+	    flushOutput();
+	}
 
-    currentOutputTuples.add(new Tuple(key, value));
+	currentOutputTuples.add(new Tuple(key, value));
     }
 
     /**
@@ -450,13 +451,13 @@ public class MapReduce {
      * key,value-pair to the final output file. Note that this method will buffer
      * all key/value-pairs in memory until the application is done. Only then will
      * it actually perform the real write. This is done for efficiency reasons.
-     *
+     * 
      * @param key   The key to be stored.
      * @param value The value accompanying this key
      * @throws IOException
      */
     public void emitFinal(String key, String value) throws IOException {
-    postProcessingMap.put(key, value);
+	postProcessingMap.put(key, value);
     }
 
     /**
@@ -466,14 +467,14 @@ public class MapReduce {
      * @throws FileNotFoundException
      */
     private void checkExists(String dir) throws FileNotFoundException {
-    File f = new File(dir);
+	File f = new File(dir);
 
-    if (!f.exists()) {
-        throw new FileNotFoundException("cannot find " + dir);
-    }
-    if (!f.isDirectory()) {
-        throw new FileNotFoundException(dir + " is not a directory");
-    }
+	if (!f.exists()) {
+	    throw new FileNotFoundException("cannot find " + dir);
+	}
+	if (!f.isDirectory()) {
+	    throw new FileNotFoundException(dir + " is not a directory");
+	}
     }
 
     /**
@@ -484,12 +485,12 @@ public class MapReduce {
      * @return
      */
     public static Tuple splitLine(String line) {
-    String[] splitLine = line.split("\\|"); // the output and final files have the structure "key|value"
-    if (splitLine.length != 2) { // sanity check
-        logger.warn("Illegal line in intermediate file: " + line);
-        return null;
-    }
-    return new Tuple(splitLine[0], splitLine[1]);
+	String[] splitLine = line.split("\\|"); // the output and final files have the structure "key|value"
+	if (splitLine.length != 2) { // sanity check
+	    logger.warn("Illegal line in intermediate file: " + line);
+	    return null;
+	}
+	return new Tuple(splitLine[0], splitLine[1]);
     }
 
     /**
@@ -510,10 +511,10 @@ public class MapReduce {
         try (BufferedReader in = new BufferedReader(new FileReader(file))) {
             List<String> allLines = Arrays.asList(in.lines().toArray(String[]::new));
             userApplication.map(file.getName(), allLines);
-        }
-    }
+	    }
+	}
 
-    flushIntermediate();
+	flushIntermediate();
     }
 
     /**
@@ -524,16 +525,17 @@ public class MapReduce {
      * @throws IOException
      */
     private void runReducePhase(HashMap<Long, List<String>> job) throws IOException {
-    HashMap.Entry<Long, List<String>> entry = job.entrySet().iterator().next();
+	HashMap.Entry<Long, List<String>> entry = job.entrySet().iterator().next();
     this.batchKey = entry.getKey();
     this.currentOutputFileNumber = 0;
     logger.info(this.type + ": " + this.name + " | Starting Reduce job on: " + entry.getValue().size() + " file(s).");
-    for (String filePath : entry.getValue()) {
+	for (String filePath : entry.getValue()) {
         logger.trace(this.type + ": " + this.name + " | reducing file: " + filePath);
-        File file = new File(filePath);
-        reduceFile(file);
-        }
-    flushOutput();
+	    File file = new File(filePath);
+	    reduceFile(file);
+	}
+
+	flushOutput();
     }
 
     /**
@@ -547,29 +549,29 @@ public class MapReduce {
      * @throws IOException
      */
     private void reduceFile(File f) throws IOException {
-    TreeMap<String, List<String>> map = new TreeMap<String, List<String>>();
+	TreeMap<String, List<String>> map = new TreeMap<String, List<String>>();
 
-    try (BufferedReader in = new BufferedReader(new FileReader(f))) {
-        List<String> allLines = Arrays.asList(in.lines().toArray(String[]::new));
+	try (BufferedReader in = new BufferedReader(new FileReader(f))) {
+	    List<String> allLines = Arrays.asList(in.lines().toArray(String[]::new));
 
-        for (String line : allLines) {
-        Tuple t = splitLine(line);
-        if (t == null)
-            continue;
+	    for (String line : allLines) {
+		Tuple t = splitLine(line);
+		if (t == null)
+		    continue;
 
-        List<String> values = (List<String>) map.remove(t.key);
-        if (values == null) {
-            values = new ArrayList<String>();
-        }
-        values.add(t.value);
-        map.put(t.key, values);
-        }
+		List<String> values = (List<String>) map.remove(t.key);
+		if (values == null) {
+		    values = new ArrayList<String>();
+		}
+		values.add(t.value);
+		map.put(t.key, values);
+	    }
 
-        for (String key : map.keySet()) {
-        List<String> values = map.get(key);
-        userApplication.reduce(key, values);
-        }
-    }
+	    for (String key : map.keySet()) {
+		List<String> values = map.get(key);
+		userApplication.reduce(key, values);
+	    }
+	}
     }
 
     /**
@@ -578,20 +580,20 @@ public class MapReduce {
      * @throws IOException
      */
     private void flushIntermediate() throws IOException {
-    String fileName = config.getIntermediateDir() + File.separator + this.batchKey+ "_intermediate" + currentIntermediateFileNumber
-        + ".txt";
-    logger.trace(this.type + ": " + this.name + " | Flush intermediate: " + fileName);
-    currentIntermediateFileNumber++;
+	String fileName = config.getIntermediateDir() + File.separator + this.batchKey + "_intermediate" + currentIntermediateFileNumber
+		+ ".txt";
+	logger.trace(this.type + ": " + this.name + " | Flush intermediate: " + fileName);
+	currentIntermediateFileNumber++;
 
-    try (BufferedWriter bw = new BufferedWriter(new FileWriter(fileName))) {
-        for (int i = 0; i < currentIntermediateTuples.size(); i++) {
-            Tuple t = currentIntermediateTuples.get(i);
-            bw.write(t.key + "|" + t.value + "\n");
-        }
-    } finally {
-        currentIntermediateTuples.clear();
-        currentIntermediateSize = 0;
-    }
+	try (BufferedWriter bw = new BufferedWriter(new FileWriter(fileName))) {
+	    for (int i = 0; i < currentIntermediateTuples.size(); i++) {
+		Tuple t = currentIntermediateTuples.get(i);
+		bw.write(t.key + "|" + t.value + "\n");
+	    }
+	} finally {
+	    currentIntermediateTuples.clear();
+	    currentIntermediateSize = 0;
+	}
     }
 
     /**
@@ -603,28 +605,28 @@ public class MapReduce {
      * @throws IOException
      */
     private void flushOutput() throws IOException {
-    int myOutputFileNumber = currentOutputFileNumber;
-    currentOutputFileNumber++;
+	int myOutputFileNumber = currentOutputFileNumber;
+	currentOutputFileNumber++;
 
-    String fileName = config.getOutputDir() + File.separator + this.batchKey + "_output" + myOutputFileNumber + ".txt";
-    File out = new File(fileName);
+	String fileName = config.getOutputDir() + File.separator + this.batchKey + "_output" + myOutputFileNumber + ".txt";
+	File out = new File(fileName);
 
-    File tmpFile = File.createTempFile("tempOutput_" + myOutputFileNumber, ".txt", new File(config.getOutputDir()));
-    logger.debug(this.type + ": " + this.name + " | Flush output: " + myOutputFileNumber + ": using temp file: " + tmpFile.getName());
+	File tmpFile = File.createTempFile("tempOutput_" + myOutputFileNumber, ".txt", new File(config.getOutputDir()));
+	logger.debug(this.type + ": " + this.name + " | Flush output: " + myOutputFileNumber + ": using temp file: " + tmpFile.getName());
 
-    try (BufferedWriter bw = new BufferedWriter(new FileWriter(tmpFile))) {
-        for (int i = 0; i < currentOutputTuples.size(); i++) {
-        Tuple t = currentOutputTuples.get(i);
-        bw.write(t.key + "|" + t.value + "\n");
-        }
-    } finally {
-        currentOutputTuples.clear();
-        currentOutputSize = 0;
-    }
+	try (BufferedWriter bw = new BufferedWriter(new FileWriter(tmpFile))) {
+	for (int i = 0; i < currentOutputTuples.size(); i++) {
+		Tuple t = currentOutputTuples.get(i);
+		bw.write(t.key + "|" + t.value + "\n");
+	    }
+	} finally {
+	    currentOutputTuples.clear();
+	    currentOutputSize = 0;
+	}
 
-    logger.debug(this.type + ": " + this.name + " | Rename temp output " + tmpFile.getName() + " to output: " + fileName);
+	logger.debug(this.type + ": " + this.name + " | Rename temp output " + tmpFile.getName() + " to output: " + fileName);
 
-    java.nio.file.Files.move(tmpFile.toPath(), out.toPath(), StandardCopyOption.ATOMIC_MOVE);
+	java.nio.file.Files.move(tmpFile.toPath(), out.toPath(), StandardCopyOption.ATOMIC_MOVE);
     }
 
     /**
@@ -634,72 +636,72 @@ public class MapReduce {
      * 
      * @throws IOException
      */
-    public int runPostProcessingPhase() throws IOException {
-    File[] files = new File(config.getOutputDir()).listFiles();
-    logger.info(this.type + ": " + this.name + " | post processing files: " + files.length);
-    for (File f : files) {
-        logger.trace(this.type + ": " + this.name + " | post processing file: " + f);
+	public int runPostProcessingPhase() throws IOException {
+	File[] files = new File(config.getOutputDir()).listFiles();
+	logger.info(this.type + ": " + this.name + " | post processing files: " + files.length);
+	for (File f : files) {
+	    logger.trace(this.type + ": " + this.name + " | post processing file: " + f);
 
-        try (BufferedReader in = new BufferedReader(new FileReader(f))) {
-        String[] allLines = in.lines().toArray(String[]::new);
+	    try (BufferedReader in = new BufferedReader(new FileReader(f))) {
+		String[] allLines = in.lines().toArray(String[]::new);
 
-        for (String line : allLines) {
-            Tuple t = splitLine(line);
-            if (t == null)
-            continue;
+		for (String line : allLines) {
+		    Tuple t = splitLine(line);
+		    if (t == null)
+			continue;
 
-            String old = postProcessingMap.get(t.key);
-            if (old == null) {
-            postProcessingMap.put(t.key, t.value);
-            } else {
-            userApplication.postProcess(t.key, old, t.value);
-            }
-        }
-        }
-    }
+		    String old = postProcessingMap.get(t.key);
+		    if (old == null) {
+			postProcessingMap.put(t.key, t.value);
+		    } else {
+			userApplication.postProcess(t.key, old, t.value);
+		    }
+		}
+	    }
+	}
 
-    String fileName = config.getOutputDir() + File.separator + "final-output.txt";
-    File out = new File(fileName);
+	String fileName = config.getOutputDir() + File.separator + "final-output.txt";
+	File out = new File(fileName);
 
-    File tmpFile = File.createTempFile("finalOutput_", ".txt", new File(config.getOutputDir()));
-    logger.debug(this.type + ": " + this.name + " | writing final output");
+	File tmpFile = File.createTempFile("finalOutput_", ".txt", new File(config.getOutputDir()));
+	logger.debug(this.type + ": " + this.name + " | writing final output");
 
-    try (BufferedWriter bw = new BufferedWriter(new FileWriter(tmpFile))) {
-        for (String key : postProcessingMap.keySet()) {
-        bw.write(key + "|" + postProcessingMap.get(key) + "\n");
-        }
-    }
+	try (BufferedWriter bw = new BufferedWriter(new FileWriter(tmpFile))) {
+	    for (String key : postProcessingMap.keySet()) {
+		bw.write(key + "|" + postProcessingMap.get(key) + "\n");
+	    }
+	}
 
-    logger.info(this.type + ": " + this.name + " | Rename temp output " + tmpFile.getName() + " to output: " + fileName);
-    java.nio.file.Files.move(tmpFile.toPath(), out.toPath(), StandardCopyOption.ATOMIC_MOVE);
-    return files.length;
-    }
+	logger.info(this.type + ": " + this.name + " | Rename temp output " + tmpFile.getName() + " to output: " + fileName);
+	java.nio.file.Files.move(tmpFile.toPath(), out.toPath(), StandardCopyOption.ATOMIC_MOVE);
+	return files.length;
+	}
 
     /**
      * A helper class that wraps a key/value-pair in a tuple
      */
     public final static class Tuple implements Comparable<Tuple> {
-    final String key;
-    final String value;
+	final String key;
+	final String value;
 
-    public Tuple(String key, String value) {
-        this.key = key;
-        this.value = value;
-    }
+	public Tuple(String key, String value) {
+	    this.key = key;
+	    this.value = value;
+	}
 
-    @Override
-    public int compareTo(Tuple o) {
-        return key.compareTo(o.key);
-    }
+	@Override
+	public int compareTo(Tuple o) {
+	    return key.compareTo(o.key);
+	}
 
-    @Override
-    public int hashCode() {
-        return key.hashCode();
-    }
+	@Override
+	public int hashCode() {
+	    return key.hashCode();
+	}
 
-    @Override
-    public boolean equals(Object obj) {
-        return key.equals(obj);
-    }
+	@Override
+	public boolean equals(Object obj) {
+	    return key.equals(obj);
+	}
     }
 }
