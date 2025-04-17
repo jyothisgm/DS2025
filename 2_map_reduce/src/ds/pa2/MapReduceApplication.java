@@ -36,9 +36,8 @@ public interface MapReduceApplication {
 	 *             the application.
 	 * @throws IOException
 	 * @throws IllegalArgumentException
-	 * @throws InterruptedException
 	 */
-	public void start() throws IOException, IllegalArgumentException, InterruptedException;
+	public void start() throws IOException, IllegalArgumentException;
 
 	/**
 	 * The map method should invoke emitIntermediate(String key, String value) on

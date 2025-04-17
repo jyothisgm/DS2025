@@ -61,7 +61,7 @@ public final class WordCountCombiner implements MapReduceApplication {
 			mr.emitIntermediate(entry.getKey(), Integer.toString(entry.getValue()));
 		}
 	}
-	
+
 	@Override
 	public void reduce(String key, Iterable<String> values) throws IOException {
 		int sum = 0;

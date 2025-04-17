@@ -151,7 +151,7 @@ public class MapReduce {
 			runClient(mr);
 			System.exit(0);
 		}
-	} catch (IllegalArgumentException | IOException | InterruptedException| NotBoundException e) {
+	} catch (IllegalArgumentException | IOException | NotBoundException e) {
 	    System.err.println("An error occurred: " + e.getMessage());
 	    e.printStackTrace();
 	    System.exit(1);
