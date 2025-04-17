@@ -1,6 +1,8 @@
 package ds.pa2;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * This is an example MapReduce user application. It counts word occurrences in
@@ -9,7 +11,7 @@ import java.io.IOException;
  * distributed operations are completely hidden from the user. Still, this can
  * scale to many thousands of files and compute nodes.
  */
-public final class WordCount implements MapReduceApplication {
+public final class WordCountCombiner implements MapReduceApplication {
 	String[] args;
 	MapReduce mr;
 	Config config;
@@ -44,17 +46,22 @@ public final class WordCount implements MapReduceApplication {
 
 	@Override
 	public void map(String key, Iterable<String> lines) throws IOException {
+		Map<String, Integer> localCount = new HashMap<>();
+
 		for (String line : lines) {
 			String[] words = line.split("[^a-zA-Z]+");
 			for (String word : words) {
-				if (word.length() > 0)
-					// We convert all words to lower case, we are interested in the words, not in
-					// their capitalization.
-					mr.emitIntermediate(word.toLowerCase(), "1");
+				if (word.length() > 0) {
+					String w = word.toLowerCase();
+					localCount.put(w, localCount.getOrDefault(w, 0) + 1);
+				}
 			}
 		}
+		for (Map.Entry<String, Integer> entry : localCount.entrySet()) {
+			mr.emitIntermediate(entry.getKey(), Integer.toString(entry.getValue()));
+		}
 	}
-
+	
 	@Override
 	public void reduce(String key, Iterable<String> values) throws IOException {
 		int sum = 0;
