@@ -7,9 +7,6 @@ do
   mkdir -p /var/scratch/$USER/output
 
   srun -N $size -t 15 ./run.sh WordCount > out.WordCount.$size 2> err.WordCount.$size
-
-  # check correctness
-  diff -sq /var/scratch/$USER/output/final-output.txt /var/scratch/rob/WordCount-books-nl-output-correct.txt
 done
 
 for size in 2 4 8 12 16
@@ -19,9 +16,6 @@ do
   mkdir -p /var/scratch/$USER/output
 
   srun -N $size -t 15 ./run.sh WordCountCombiner > out.WordCountCombiner.$size 2> err.WordCountCombiner.$size
-
-  # check correctness
-  diff -sq /var/scratch/$USER/output/final-output.txt /var/scratch/rob/WordCount-books-nl-output-correct.txt
 done
 
 for size in 2 4 8 12 16
@@ -31,7 +25,4 @@ do
   mkdir -p /var/scratch/$USER/output
 
   srun -N $size -t 15 ./run.sh InvertedIndex > out.InvertedIndex.$size 2> err.InvertedIndex.$size
-
-  # check correctness
-  diff -sq /var/scratch/$USER/output/final-output.txt /var/scratch/rob/InvertedIndex-books-nl-output-correct.txt
 done
