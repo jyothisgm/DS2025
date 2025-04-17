@@ -37,15 +37,10 @@ import org.slf4j.LoggerFactory;
 public class MapReduce {
     private static Logger logger = LoggerFactory.getLogger(MapReduce.class);
     private Config config;
+    private static MapReduceApplication userApplication;
+    private static StubImpl stubImpl = new StubImpl();
 
-    public Config getConfig() {
-		return config;
-	}
-
-	private static MapReduceApplication userApplication;
-	private static StubImpl stubImpl = new StubImpl();
-
-	private int currentIntermediateFileNumber = 0;
+    private int currentIntermediateFileNumber = 0;
     private int currentIntermediateSize = 0;
     private final ArrayList<Tuple> currentIntermediateTuples = new ArrayList<Tuple>();
 
@@ -53,9 +48,9 @@ public class MapReduce {
     private int currentOutputSize = 0;
     private final ArrayList<Tuple> currentOutputTuples = new ArrayList<Tuple>();
 
-	private long batchKey;
-	public String name = Util.getMyHostname();
-	public String type = Util.amICoordinator() ? "COORDINATOR" : "WORKER";
+    private long batchKey;
+    public String name = Util.getMyHostname();
+    public String type = Util.amICoordinator() ? "COORDINATOR" : "WORKER";
 
     /**
      * A treeMap is sorted. This is very useful for checking whether the output is
@@ -77,80 +72,80 @@ public class MapReduce {
      * @param args
      */
     public static void main(String[] args) {
-	if (args.length != 4) {
-	    System.err.println(
-		    "Usage: java ds.pa2.MapReduce <application class name> <input dir> <intermediate dir> <output dir>");
-	    System.exit(1);
-	}
+    if (args.length != 4) {
+        System.err.println(
+            "Usage: java ds.pa2.MapReduce <application class name> <input dir> <intermediate dir> <output dir>");
+        System.exit(1);
+    }
 
-	// We will now find the Class containing the user program, based on the name
-	// provided by the user.
-	// Next, we instantiate that class and call the default constructor (without
-	// arguments)
-	try {
-	    Class<?> appClass = Class.forName(args[0]);
-	    userApplication = (MapReduceApplication) appClass.getDeclaredConstructor().newInstance();
-	} catch (Exception e) {
-	    System.err.println("Cannot find the constructor of the main class " + args[0] + ": " + e);
-	    System.exit(1);
-	}
+    // We will now find the Class containing the user program, based on the name
+    // provided by the user.
+    // Next, we instantiate that class and call the default constructor (without
+    // arguments)
+    try {
+        Class<?> appClass = Class.forName(args[0]);
+        userApplication = (MapReduceApplication) appClass.getDeclaredConstructor().newInstance();
+    } catch (Exception e) {
+        System.err.println("Cannot find the constructor of the main class " + args[0] + ": " + e);
+        System.exit(1);
+    }
 
-	// We now create a new MapReduce object that will handle all IO and scheduling.
-	// Finally, we call start on the user application, to give control to the
-	// application.
-	// It should create a configuration and invoke mapReduce() when it has
-	// initialized its data structures.
-	logger.info("starting user application: " + args[0]);
-	try {
-		MapReduce mr = new MapReduce();
-	    userApplication.configure(mr, args);
+    // We now create a new MapReduce object that will handle all IO and scheduling.
+    // Finally, we call start on the user application, to give control to the
+    // application.
+    // It should create a configuration and invoke mapReduce() when it has
+    // initialized its data structures.
+    logger.info("starting user application: " + args[0]);
+    try {
+        MapReduce mr = new MapReduce();
+        userApplication.configure(mr, args);
 
-		stubImpl = new StubImpl();
-		Registry reg = LocateRegistry.createRegistry(1099);
-		StubInterface stub = (StubInterface) UnicastRemoteObject.exportObject(stubImpl, 1099);
+        stubImpl = new StubImpl();
+        Registry reg = LocateRegistry.createRegistry(1099);
+        StubInterface stub = (StubInterface) UnicastRemoteObject.exportObject(stubImpl, 1099);
 
-		try {
-			reg.bind(mr.name, stub);
-		} catch (RemoteException | AlreadyBoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		logger.info(mr.type + ": " + mr.name + " | The node should now be visible on the registry...");
-	
-		if (Util.amICoordinator()) {
-			logger.info(mr.type + ": " + mr.name + " | Starting Coordinator");
-			System.out.println("Starting Coordinator");
-			userApplication.start();
+        try {
+            reg.bind(mr.name, stub);
+        } catch (RemoteException | AlreadyBoundException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+        logger.info(mr.type + ": " + mr.name + " | The node should now be visible on the registry...");
+    
+        if (Util.amICoordinator()) {
+            logger.info(mr.type + ": " + mr.name + " | Starting Coordinator");
+            System.out.println("Starting Coordinator");
+            userApplication.start();
 
-			stubImpl.setPostProcessingDone();
-			List<String> killedClients = new ArrayList<>();
-			logger.info(mr.type + ": " + mr.name + " | Terminating Clients");
-			while (stubImpl.getClientStubs().size() > 0) {
-				Iterator<Map.Entry<String, StubInterface>> iterator = stubImpl.getClientStubs().entrySet().iterator();
-				while (iterator.hasNext()) {
-					Map.Entry<String, StubInterface> entry = iterator.next();
-					try {
-						entry.getValue().heartBeat(false);
-					} catch (Exception e) {
-						killedClients.add(entry.getKey());
-						logger.info(mr.type + ": " + mr.name + " | Terminated Client " + entry.getKey());
-					}
-				}
-				for (String key : killedClients) {
-					stubImpl.removeClient(key);
-				}
-			}
-			logger.info(mr.type + ": " + mr.name + " | Terminated Server");
-			System.exit(0);
-		} else {
-			runClient(mr);
-			System.exit(0);
-		}
-	} catch (IllegalArgumentException | IOException | NotBoundException e) {
-	    System.err.println("An error occurred: " + e.getMessage());
-	    e.printStackTrace();
-	    System.exit(1);
-	}
+            stubImpl.setPostProcessingDone();
+            List<String> killedClients = new ArrayList<>();
+            logger.info(mr.type + ": " + mr.name + " | Terminating Clients");
+            while (stubImpl.getClientStubs().size() > 0) {
+                Iterator<Map.Entry<String, StubInterface>> iterator = stubImpl.getClientStubs().entrySet().iterator();
+                while (iterator.hasNext()) {
+                    Map.Entry<String, StubInterface> entry = iterator.next();
+                    try {
+                        entry.getValue().heartBeat(false);
+                    } catch (Exception e) {
+                        killedClients.add(entry.getKey());
+                        logger.info(mr.type + ": " + mr.name + " | Terminated Client " + entry.getKey());
+                    }
+                }
+                for (String key : killedClients) {
+                    stubImpl.removeClient(key);
+                }
+            }
+            logger.info(mr.type + ": " + mr.name + " | Terminated Server");
+            System.exit(0);
+        } else {
+            runClient(mr);
+            System.exit(0);
+        }
+    } catch (IllegalArgumentException | IOException | NotBoundException e) {
+        System.err.println("An error occurred: " + e.getMessage());
+        e.printStackTrace();
+        System.exit(1);
+    }
     }
 
     /**
@@ -166,117 +161,117 @@ public class MapReduce {
      * @throws IllegalArgumentException
      */
     public void configure(Config config) throws IOException, IllegalArgumentException {
-		this.config = config;
+    this.config = config;
 
-		// validate config
-		checkExists(config.getInputDir());
-		checkExists(config.getIntermediateDir());
-		checkExists(config.getOutputDir());
+    // validate config
+    checkExists(config.getInputDir());
+    checkExists(config.getIntermediateDir());
+    checkExists(config.getOutputDir());
     }
 
-	private static void runClient(MapReduce mr) throws NotBoundException, IOException {
-		logger.info(mr.type + ": " + mr.name + " | Client started and thinks master is: " + Util.getCoordinatorHostname());
+    private static void runClient(MapReduce mr) throws NotBoundException, IOException {
+        logger.info(mr.type + ": " + mr.name + " | Client started and thinks master is: " + Util.getCoordinatorHostname());
 
-		StubInterface server = null;
-		while (Objects.isNull(server)) {
-			try {
-				String host = Util.getCoordinatorHostname();
-				logger.info(mr.type + ": " + mr.name + " | Client connecting to " + host);
+        StubInterface server = null;
+        while (Objects.isNull(server)) {
+            try {
+                String host = Util.getCoordinatorHostname();
+                logger.info(mr.type + ": " + mr.name + " | Client connecting to " + host);
 
-				Registry registry = LocateRegistry.getRegistry(host, 1099);
-				logger.debug(mr.type + ": " + mr.name + " | Client connected to " + host);
-				server = (StubInterface) registry.lookup(host);
-				logger.debug(mr.type + ": " + mr.name + " | Server stub received for " + host);
-				
-			} catch (RemoteException | NotBoundException e) {
-				logger.warn(mr.type + ": " + mr.name + " | " + e.getMessage());
-				try {
-					Thread.sleep(50);
-				} catch (InterruptedException e1) {
-					// TODO Auto-generated catch block
-					e1.printStackTrace();
-				}
-			}
-		}
+                Registry registry = LocateRegistry.getRegistry(host, 1099);
+                logger.debug(mr.type + ": " + mr.name + " | Client connected to " + host);
+                server = (StubInterface) registry.lookup(host);
+                logger.debug(mr.type + ": " + mr.name + " | Server stub received for " + host);
+                
+            } catch (RemoteException | NotBoundException e) {
+                logger.warn(mr.type + ": " + mr.name + " | " + e.getMessage());
+                try {
+                    Thread.sleep(50);
+                } catch (InterruptedException e1) {
+                    // TODO Auto-generated catch block
+                    e1.printStackTrace();
+                }
+            }
+        }
 
-		long numOfMaps = 0, mapTime = 0, numOfReduce = 0, reduceTime = 0, startTime, start, elapsed;
-		logger.info(mr.type + ": " + mr.name + " | Starting Map Phase");
-		startTime = System.nanoTime();
-		boolean isMapPhaseDone = false;
-		while (!isMapPhaseDone) {
-			start = System.nanoTime();
-			logger.debug(mr.type + ": " + mr.name + " | Asking for work");
-			HashMap<Long, List<String>> job = server.getMapJob(mr.name);
-			if(!job.isEmpty()) {
-				mr.runMapPhase(job);
-				logger.debug(mr.type + ": " + mr.name + " | Contacting Server");
-				server.mapJobCompleted(mr.name);
-				logger.debug(mr.type + ": " + mr.name + " | Notified Server");
+        long numOfMaps = 0, mapTime = 0, numOfReduce = 0, reduceTime = 0, startTime, start, elapsed;
+        logger.info(mr.type + ": " + mr.name + " | Starting Map Phase");
+        startTime = System.nanoTime();
+        boolean isMapPhaseDone = false;
+        while (!isMapPhaseDone) {
+            start = System.nanoTime();
+            logger.debug(mr.type + ": " + mr.name + " | Asking for work");
+            HashMap<Long, List<String>> job = server.getMapJob(mr.name);
+            if(!job.isEmpty()) {
+                mr.runMapPhase(job);
+                logger.debug(mr.type + ": " + mr.name + " | Contacting Server");
+                server.mapJobCompleted(mr.name);
+                logger.debug(mr.type + ": " + mr.name + " | Notified Server");
 
-				elapsed = (System.nanoTime() - start) / 1000000;
-				mapTime += elapsed;
-				numOfMaps++;
-				logger.info(mr.type + ": " + mr.name + " | Map Job Took: " + elapsed + " milliseconds.");
-			} else {
-				try {
-					logger.debug(mr.type + ": " + mr.name + " | sleeping after map for 50 milliseconds");
-					Thread.sleep(50);
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
-			isMapPhaseDone = server.isMapPhaseDone();
-			logger.debug(mr.type + ": " + mr.name + " | Is Map Phase Done?: " + isMapPhaseDone);
-		}
+                elapsed = (System.nanoTime() - start) / 1000000;
+                mapTime += elapsed;
+                numOfMaps++;
+                logger.info(mr.type + ": " + mr.name + " | Map Job Took: " + elapsed + " milliseconds.");
+            } else {
+                try {
+                    logger.debug(mr.type + ": " + mr.name + " | sleeping after map for 50 milliseconds");
+                    Thread.sleep(50);
+                } catch (InterruptedException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+            }
+            isMapPhaseDone = server.isMapPhaseDone();
+            logger.debug(mr.type + ": " + mr.name + " | Is Map Phase Done?: " + isMapPhaseDone);
+        }
 
-		logger.info(mr.type + ": " + mr.name + " | Map Phase Took: " + mapTime + " milliseconds for " + numOfMaps + " map operations");
-		logger.info(mr.type + ": " + mr.name + " | Starting Reduce Phase");
-		boolean isReducePhaseDone = false;
+        logger.info(mr.type + ": " + mr.name + " | Map Phase Took: " + mapTime + " milliseconds for " + numOfMaps + " map operations");
+        logger.info(mr.type + ": " + mr.name + " | Starting Reduce Phase");
+        boolean isReducePhaseDone = false;
 
-		while (!isReducePhaseDone){
-			logger.debug(mr.type + ": " + mr.name + " | Asking for work");
-			HashMap<Long, List<String>> job = server.getReduceJob(mr.name);
-			start = System.nanoTime();
-			if (!job.isEmpty()){
-				mr.runReducePhase(job);
-				logger.debug(mr.type + ": " + mr.name + " | Contacting Server");
-				server.reduceJobCompleted(mr.name);
-				logger.debug(mr.type + ": " + mr.name + " | Notified Server");
+        while (!isReducePhaseDone){
+            logger.debug(mr.type + ": " + mr.name + " | Asking for work");
+            HashMap<Long, List<String>> job = server.getReduceJob(mr.name);
+            start = System.nanoTime();
+            if (!job.isEmpty()){
+                mr.runReducePhase(job);
+                logger.debug(mr.type + ": " + mr.name + " | Contacting Server");
+                server.reduceJobCompleted(mr.name);
+                logger.debug(mr.type + ": " + mr.name + " | Notified Server");
 
-				elapsed = (System.nanoTime() - start) / 1000000;
-				reduceTime += elapsed;
-				numOfReduce++;
-				logger.info(mr.type + ": " + mr.name + " | Reduce Job Took: " + elapsed + " milliseconds.");
-			} else {
-				try {
-					logger.debug(mr.type + ": " + mr.name + " | sleeping after reduce for 50 milliseconds");
-					Thread.sleep(50);
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
-			isReducePhaseDone = server.isReducePhaseDone();
-			logger.debug(mr.type + ": " + mr.name + " | Is Reduce Phase Done?: " + isMapPhaseDone);
-		}
-		elapsed = (System.nanoTime() - startTime) / 1000000;
-		logger.info(mr.type + ": " + mr.name + " | Reduce Phase Took: " + reduceTime + " milliseconds for " + numOfReduce + " reduce operations");
-		logger.info(mr.type + ": " + mr.name + " | Total application time is: " + elapsed + " milliseconds. Did " + numOfMaps +
-					" Map operations and " + numOfReduce + " Reduce operations");
-		boolean isPostProcessingDone = server.isPostProcessingDone();
-		while (!isPostProcessingDone){
-			try {
-				logger.trace(mr.name + " | waiting for PostProcessing to finish for 1 sec");
-				Thread.sleep(1000);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			isPostProcessingDone = server.isPostProcessingDone();
-		}
-		System.out.printf("%s,%s,%s,%d,%d,%d,%d,%d,%d,%d\n", Util.getNrClients(), mr.name, "Worker", numOfMaps, mapTime, numOfReduce, reduceTime, 0, 0, elapsed);
-	}
+                elapsed = (System.nanoTime() - start) / 1000000;
+                reduceTime += elapsed;
+                numOfReduce++;
+                logger.info(mr.type + ": " + mr.name + " | Reduce Job Took: " + elapsed + " milliseconds.");
+            } else {
+                try {
+                    logger.debug(mr.type + ": " + mr.name + " | sleeping after reduce for 50 milliseconds");
+                    Thread.sleep(50);
+                } catch (InterruptedException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+            }
+            isReducePhaseDone = server.isReducePhaseDone();
+            logger.debug(mr.type + ": " + mr.name + " | Is Reduce Phase Done?: " + isMapPhaseDone);
+        }
+        elapsed = (System.nanoTime() - startTime) / 1000000;
+        logger.info(mr.type + ": " + mr.name + " | Reduce Phase Took: " + reduceTime + " milliseconds for " + numOfReduce + " reduce operations");
+        logger.info(mr.type + ": " + mr.name + " | Total application time is: " + elapsed + " milliseconds. Did " + numOfMaps +
+                    " Map operations and " + numOfReduce + " Reduce operations");
+        boolean isPostProcessingDone = server.isPostProcessingDone();
+        while (!isPostProcessingDone){
+            try {
+                logger.trace(mr.name + " | waiting for PostProcessing to finish for 1 sec");
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+            isPostProcessingDone = server.isPostProcessingDone();
+        }
+        System.out.printf("%s,%s,%s,%d,%d,%d,%d,%d,%d,%d\n", Util.getNrClients(), mr.name, "Worker", numOfMaps, mapTime, numOfReduce, reduceTime, 0, 0, elapsed);
+    }
 
     /**
      * This is the "main" stating point for the real MapReduce. The user application
@@ -288,125 +283,125 @@ public class MapReduce {
      * 
      */
     public void mapReduce() throws IOException, IllegalArgumentException {
-		if (config == null) {
-			throw new IllegalArgumentException(
-				"You forgot to provide a Config to mapReduce via the method configure()");
-		}
+        if (config == null) {
+            throw new IllegalArgumentException(
+                "You forgot to provide a Config to mapReduce via the method configure()");
+        }
 
-		long startTime = System.nanoTime();
-		long start, elapsed;
-		long numOfMaps, mapTime, numOfReduce, reduceTime;
+        long startTime = System.nanoTime();
+        long start, elapsed;
+        long numOfMaps, mapTime, numOfReduce, reduceTime;
 
-		logger.info(this.type + ": " + this.name + " | Populate Map Queue");
-		System.out.println("Populate Map Queue");
+        logger.info(this.type + ": " + this.name + " | Populate Map Queue");
+        System.out.println("Populate Map Queue");
 
-		start = System.nanoTime();
-		numOfMaps = stubImpl.populateMapQueue(this.getConfig());
-		elapsed = (System.nanoTime() - start) / 1000000;
+        start = System.nanoTime();
+        numOfMaps = stubImpl.populateMapQueue(this.config);
+        elapsed = (System.nanoTime() - start) / 1000000;
 
-		logger.info(this.type + ": " + this.name + " | Map Queue Populated. Took: " + elapsed + " milliseconds.");
-		System.out.println("Map Queue Populated. Took: " + elapsed + " milliseconds.");
-		logger.info(this.type + ": " + this.name + " | Map Phase Started");
-		System.out.println("Map Phase Started");
-		start = System.nanoTime();
-		while (!stubImpl.isTimePopulateReduce()) {
-			try {
-				List<String> failedClients = new ArrayList<>();
-				logger.trace(this.type + ": " + this.name + " | Sleeping for map phase");
-				Thread.sleep(50);
-				Iterator<Map.Entry<String, StubInterface>> iterator = stubImpl.getClientStubs().entrySet().iterator();
-				while (iterator.hasNext()) {
-					Map.Entry<String, StubInterface> entry = iterator.next();
-					boolean end = false;
-					try {
-						// Testing Random Worker Failures
-						// if (Math.random() < 0.01 && stubImpl.getClientStubs().size() > 4 && failedClients.size() < 1) {
-						// 	end = true;
-						// }
-						entry.getValue().heartBeat(end);
-						logger.trace(this.type + ": " + this.name + " | Heartbeat " + entry.getKey());
-					} catch (Exception e) {
-						failedClients.add(entry.getKey());
-						logger.warn(this.type + ": " + this.name + " | Heartbeat Failed " + entry.getKey());
-					}
-				}
-				for (String key : failedClients) {
-					stubImpl.removeClient(key);
-				}
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-		mapTime = (System.nanoTime() - start) / 1000000;
-		logger.info(this.type + ": " + this.name + " | Map Phase Done. Took: " + mapTime + " milliseconds.");
-		System.out.println("Map Phase Done. Took: " + mapTime + " milliseconds.");
+        logger.info(this.type + ": " + this.name + " | Map Queue Populated. Took: " + elapsed + " milliseconds.");
+        System.out.println("Map Queue Populated. Took: " + elapsed + " milliseconds.");
+        logger.info(this.type + ": " + this.name + " | Map Phase Started");
+        System.out.println("Map Phase Started");
+        start = System.nanoTime();
+        while (!stubImpl.isTimePopulateReduce()) {
+            try {
+                List<String> failedClients = new ArrayList<>();
+                logger.trace(this.type + ": " + this.name + " | Sleeping for map phase");
+                Thread.sleep(50);
+                Iterator<Map.Entry<String, StubInterface>> iterator = stubImpl.getClientStubs().entrySet().iterator();
+                while (iterator.hasNext()) {
+                    Map.Entry<String, StubInterface> entry = iterator.next();
+                    boolean end = false;
+                    try {
+                        // Testing Random Worker Failures
+                        // if (Math.random() < 0.01 && stubImpl.getClientStubs().size() > 4 && failedClients.size() < 1) {
+                        //     end = true;
+                        // }
+                        entry.getValue().heartBeat(end);
+                        logger.trace(this.type + ": " + this.name + " | Heartbeat " + entry.getKey());
+                    } catch (Exception e) {
+                        failedClients.add(entry.getKey());
+                        logger.warn(this.type + ": " + this.name + " | Heartbeat Failed " + entry.getKey());
+                    }
+                }
+                for (String key : failedClients) {
+                    stubImpl.removeClient(key);
+                }
+            } catch (InterruptedException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+        }
+        mapTime = (System.nanoTime() - start) / 1000000;
+        logger.info(this.type + ": " + this.name + " | Map Phase Done. Took: " + mapTime + " milliseconds.");
+        System.out.println("Map Phase Done. Took: " + mapTime + " milliseconds.");
 
-		logger.info(this.type + ": " + this.name + " | Populate Reduce Queue");
-		System.out.println("Populate Reduce Queue");
-		start = System.nanoTime();
-		numOfReduce = stubImpl.populateReduceQueue(this.getConfig());
-		elapsed = (System.nanoTime() - start) / 1000000;
-		logger.info(this.type + ": " + this.name + " | Reduce Queue Populated. Took: " + elapsed + " milliseconds.");
-		System.out.println("Reduce Queue Populated. Took: " + elapsed + " milliseconds.");
+        logger.info(this.type + ": " + this.name + " | Populate Reduce Queue");
+        System.out.println("Populate Reduce Queue");
+        start = System.nanoTime();
+        numOfReduce = stubImpl.populateReduceQueue(this.config);
+        elapsed = (System.nanoTime() - start) / 1000000;
+        logger.info(this.type + ": " + this.name + " | Reduce Queue Populated. Took: " + elapsed + " milliseconds.");
+        System.out.println("Reduce Queue Populated. Took: " + elapsed + " milliseconds.");
 
-		// Set map phase over after Reduce Job is populated
-		stubImpl.setMapPhaseDone();
-		logger.info(this.type + ": " + this.name + " | Reduce Phase Started");
-		System.out.println("Reduce Phase Started");
-		start = System.nanoTime();
-		while(!stubImpl.isTimePostProcessing()){
-			try {
-				List<String> failedClients = new ArrayList<>();
-				logger.trace(this.type + ": " + this.name + " | Sleeping for reduce phase");
-				Thread.sleep(50);
-				Iterator<Map.Entry<String, StubInterface>> iterator = stubImpl.getClientStubs().entrySet().iterator();
-				while (iterator.hasNext()) {
-					Map.Entry<String, StubInterface> entry = iterator.next();
-					boolean end = false;
-					try {
-						// Testing Random Worker Failures
-						// if (Math.random() < 0.01 && stubImpl.getClientStubs().size() > 2 && failedClients.size() < 1) {
-						// 	end = true;
-						// }
-						entry.getValue().heartBeat(end);
-						logger.trace(this.type + ": " + this.name + " | Heartbeat " + entry.getKey());
-					} catch (Exception e) {
-						failedClients.add(entry.getKey());
-						logger.warn(this.type + ": " + this.name + " | Heartbeat Failed " + entry.getKey());
-					}
-				}
-				for (String key : failedClients) {
-					stubImpl.removeClient(key);
-				}
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-		reduceTime = (System.nanoTime() - start) / 1000000;
-		logger.info(this.type + ": " + this.name + " | Reduce Phase Done. Took: " + reduceTime + " milliseconds.");
-		System.out.println("Reduce Phase Done. Took: " + reduceTime + " milliseconds.");
+        // Set map phase over after Reduce Job is populated
+        stubImpl.setMapPhaseDone();
+        logger.info(this.type + ": " + this.name + " | Reduce Phase Started");
+        System.out.println("Reduce Phase Started");
+        start = System.nanoTime();
+        while(!stubImpl.isTimePostProcessing()){
+            try {
+                List<String> failedClients = new ArrayList<>();
+                logger.trace(this.type + ": " + this.name + " | Sleeping for reduce phase");
+                Thread.sleep(50);
+                Iterator<Map.Entry<String, StubInterface>> iterator = stubImpl.getClientStubs().entrySet().iterator();
+                while (iterator.hasNext()) {
+                    Map.Entry<String, StubInterface> entry = iterator.next();
+                    boolean end = false;
+                    try {
+                        // Testing Random Worker Failures
+                        // if (Math.random() < 0.01 && stubImpl.getClientStubs().size() > 2 && failedClients.size() < 1) {
+                        //     end = true;
+                        // }
+                        entry.getValue().heartBeat(end);
+                        logger.trace(this.type + ": " + this.name + " | Heartbeat " + entry.getKey());
+                    } catch (Exception e) {
+                        failedClients.add(entry.getKey());
+                        logger.warn(this.type + ": " + this.name + " | Heartbeat Failed " + entry.getKey());
+                    }
+                }
+                for (String key : failedClients) {
+                    stubImpl.removeClient(key);
+                }
+            } catch (InterruptedException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+        }
+        reduceTime = (System.nanoTime() - start) / 1000000;
+        logger.info(this.type + ": " + this.name + " | Reduce Phase Done. Took: " + reduceTime + " milliseconds.");
+        System.out.println("Reduce Phase Done. Took: " + reduceTime + " milliseconds.");
 
-		// Set reduce phase over
-		stubImpl.setReducePhaseDone();
+        // Set reduce phase over
+        stubImpl.setReducePhaseDone();
 
-		logger.info(this.type + ": " + this.name + " | Post Processing Phase Started");
-		System.out.println("Post Processing Phase Started");
+        logger.info(this.type + ": " + this.name + " | Post Processing Phase Started");
+        System.out.println("Post Processing Phase Started");
 
-		start = System.nanoTime();
-		long numOut = this.runPostProcessingPhase();
-		long postProcessTime = (System.nanoTime() - start) / 1000000;
-		logger.info(this.type + ": " + this.name + " | Post Processing Phase Done. Took: " + postProcessTime + " milliseconds.");
-		System.out.println("Post Processing Phase Done. Took: " + postProcessTime + " milliseconds.");
+        start = System.nanoTime();
+        long numOut = this.runPostProcessingPhase();
+        long postProcessTime = (System.nanoTime() - start) / 1000000;
+        logger.info(this.type + ": " + this.name + " | Post Processing Phase Done. Took: " + postProcessTime + " milliseconds.");
+        System.out.println("Post Processing Phase Done. Took: " + postProcessTime + " milliseconds.");
 
-		elapsed = (System.nanoTime() - startTime) / 1000000;
-		logger.info(this.type + ": " + this.name + " | Total time: " + elapsed + " milliseconds.");
-		System.out.println("Total time: " + elapsed + " milliseconds.");
+        elapsed = (System.nanoTime() - startTime) / 1000000;
+        logger.info(this.type + ": " + this.name + " | Total time: " + elapsed + " milliseconds.");
+        System.out.println("Total time: " + elapsed + " milliseconds.");
 
-		System.out.println("NClients,Node,Type,NumOfMaps,MapTime,NumOfReduce,ReduceTime,NumOfOutputFiles,PostProcessingTime,TotalTime");
-		System.out.printf("%s,%s,%s,%d,%d,%d,%d,%d,%d,%d\n", Util.getNrClients(), this.name, "Coordinator",
-				numOfMaps, mapTime, numOfReduce, reduceTime, numOut, postProcessTime, elapsed);
+        System.out.println("NClients,Node,Type,NumOfMaps,MapTime,NumOfReduce,ReduceTime,NumOfOutputFiles,PostProcessingTime,TotalTime");
+        System.out.printf("%s,%s,%s,%d,%d,%d,%d,%d,%d,%d\n", Util.getNrClients(), this.name, "Coordinator",
+                numOfMaps, mapTime, numOfReduce, reduceTime, numOut, postProcessTime, elapsed);
 
     }
 
@@ -422,13 +417,13 @@ public class MapReduce {
      * @param value The value accompanying this key
      * @throws IOException
      */
-	public void emitIntermediate(String key, String value) throws IOException {
-		currentIntermediateSize += key.length() + value.length();
-		if (currentIntermediateSize >= config.getIntermediateChunkSize()) {
-			flushIntermediate();
-		}
-		currentIntermediateTuples.add(new Tuple(key, value));
-	}
+    public void emitIntermediate(String key, String value) throws IOException {
+        currentIntermediateSize += key.length() + value.length();
+        if (currentIntermediateSize >= config.getIntermediateChunkSize()) {
+            flushIntermediate();
+        }
+        currentIntermediateTuples.add(new Tuple(key, value));
+    }
 
     /**
      * The user reduce method should call this whenever it want to emit a
@@ -442,12 +437,12 @@ public class MapReduce {
      * @throws IOException
      */
     public void emitOutput(String key, String value) throws IOException {
-	currentOutputSize += key.length() + value.length();
-	if (currentOutputSize >= config.getOutputChunkSize()) {
-	    flushOutput();
-	}
+    currentOutputSize += key.length() + value.length();
+    if (currentOutputSize >= config.getOutputChunkSize()) {
+        flushOutput();
+    }
 
-	currentOutputTuples.add(new Tuple(key, value));
+    currentOutputTuples.add(new Tuple(key, value));
     }
 
     /**
@@ -461,7 +456,7 @@ public class MapReduce {
      * @throws IOException
      */
     public void emitFinal(String key, String value) throws IOException {
-	postProcessingMap.put(key, value);
+    postProcessingMap.put(key, value);
     }
 
     /**
@@ -471,14 +466,14 @@ public class MapReduce {
      * @throws FileNotFoundException
      */
     private void checkExists(String dir) throws FileNotFoundException {
-	File f = new File(dir);
+    File f = new File(dir);
 
-	if (!f.exists()) {
-	    throw new FileNotFoundException("cannot find " + dir);
-	}
-	if (!f.isDirectory()) {
-	    throw new FileNotFoundException(dir + " is not a directory");
-	}
+    if (!f.exists()) {
+        throw new FileNotFoundException("cannot find " + dir);
+    }
+    if (!f.isDirectory()) {
+        throw new FileNotFoundException(dir + " is not a directory");
+    }
     }
 
     /**
@@ -489,12 +484,12 @@ public class MapReduce {
      * @return
      */
     public static Tuple splitLine(String line) {
-	String[] splitLine = line.split("\\|"); // the output and final files have the structure "key|value"
-	if (splitLine.length != 2) { // sanity check
-	    logger.warn("Illegal line in intermediate file: " + line);
-	    return null;
-	}
-	return new Tuple(splitLine[0], splitLine[1]);
+    String[] splitLine = line.split("\\|"); // the output and final files have the structure "key|value"
+    if (splitLine.length != 2) { // sanity check
+        logger.warn("Illegal line in intermediate file: " + line);
+        return null;
+    }
+    return new Tuple(splitLine[0], splitLine[1]);
     }
 
     /**
@@ -505,20 +500,20 @@ public class MapReduce {
      * @throws IOException
      */
     private void runMapPhase(HashMap<Long, List<String>> job) throws IOException {
-	HashMap.Entry<Long, List<String>> entry = job.entrySet().iterator().next();
+    HashMap.Entry<Long, List<String>> entry = job.entrySet().iterator().next();
     this.batchKey = entry.getKey();
-	this.currentIntermediateFileNumber = 0;
-	logger.info(this.type + ": " + this.name + " | Starting Map job on: " + entry.getValue().size() + " file(s).");
-	for (String filePath : entry.getValue()) {
-	    logger.trace(this.type + ": " + this.name + " | mapping file: " + filePath);
-		File file = new File(filePath);
-	    try (BufferedReader in = new BufferedReader(new FileReader(file))) {
-			List<String> allLines = Arrays.asList(in.lines().toArray(String[]::new));
-			userApplication.map(file.getName(), allLines);
-	    }
-	}
+    this.currentIntermediateFileNumber = 0;
+    logger.info(this.type + ": " + this.name + " | Starting Map job on: " + entry.getValue().size() + " file(s).");
+    for (String filePath : entry.getValue()) {
+        logger.trace(this.type + ": " + this.name + " | mapping file: " + filePath);
+        File file = new File(filePath);
+        try (BufferedReader in = new BufferedReader(new FileReader(file))) {
+            List<String> allLines = Arrays.asList(in.lines().toArray(String[]::new));
+            userApplication.map(file.getName(), allLines);
+        }
+    }
 
-	flushIntermediate();
+    flushIntermediate();
     }
 
     /**
@@ -529,16 +524,16 @@ public class MapReduce {
      * @throws IOException
      */
     private void runReducePhase(HashMap<Long, List<String>> job) throws IOException {
-	HashMap.Entry<Long, List<String>> entry = job.entrySet().iterator().next();
+    HashMap.Entry<Long, List<String>> entry = job.entrySet().iterator().next();
     this.batchKey = entry.getKey();
-	this.currentOutputFileNumber = 0;
-	logger.info(this.type + ": " + this.name + " | Starting Reduce job on: " + entry.getValue().size() + " file(s).");
-	for (String filePath : entry.getValue()) {
-		logger.trace(this.type + ": " + this.name + " | reducing file: " + filePath);
-		File file = new File(filePath);
-		reduceFile(file);
-		}
-	flushOutput();
+    this.currentOutputFileNumber = 0;
+    logger.info(this.type + ": " + this.name + " | Starting Reduce job on: " + entry.getValue().size() + " file(s).");
+    for (String filePath : entry.getValue()) {
+        logger.trace(this.type + ": " + this.name + " | reducing file: " + filePath);
+        File file = new File(filePath);
+        reduceFile(file);
+        }
+    flushOutput();
     }
 
     /**
@@ -552,29 +547,29 @@ public class MapReduce {
      * @throws IOException
      */
     private void reduceFile(File f) throws IOException {
-	TreeMap<String, List<String>> map = new TreeMap<String, List<String>>();
+    TreeMap<String, List<String>> map = new TreeMap<String, List<String>>();
 
-	try (BufferedReader in = new BufferedReader(new FileReader(f))) {
-	    List<String> allLines = Arrays.asList(in.lines().toArray(String[]::new));
+    try (BufferedReader in = new BufferedReader(new FileReader(f))) {
+        List<String> allLines = Arrays.asList(in.lines().toArray(String[]::new));
 
-	    for (String line : allLines) {
-		Tuple t = splitLine(line);
-		if (t == null)
-		    continue;
+        for (String line : allLines) {
+        Tuple t = splitLine(line);
+        if (t == null)
+            continue;
 
-		List<String> values = (List<String>) map.remove(t.key);
-		if (values == null) {
-		    values = new ArrayList<String>();
-		}
-		values.add(t.value);
-		map.put(t.key, values);
-	    }
+        List<String> values = (List<String>) map.remove(t.key);
+        if (values == null) {
+            values = new ArrayList<String>();
+        }
+        values.add(t.value);
+        map.put(t.key, values);
+        }
 
-	    for (String key : map.keySet()) {
-		List<String> values = map.get(key);
-		userApplication.reduce(key, values);
-	    }
-	}
+        for (String key : map.keySet()) {
+        List<String> values = map.get(key);
+        userApplication.reduce(key, values);
+        }
+    }
     }
 
     /**
@@ -583,20 +578,20 @@ public class MapReduce {
      * @throws IOException
      */
     private void flushIntermediate() throws IOException {
-	String fileName = config.getIntermediateDir() + File.separator + this.batchKey+ "_intermediate" + currentIntermediateFileNumber
-		+ ".txt";
-	logger.trace(this.type + ": " + this.name + " | Flush intermediate: " + fileName);
-	currentIntermediateFileNumber++;
+    String fileName = config.getIntermediateDir() + File.separator + this.batchKey+ "_intermediate" + currentIntermediateFileNumber
+        + ".txt";
+    logger.trace(this.type + ": " + this.name + " | Flush intermediate: " + fileName);
+    currentIntermediateFileNumber++;
 
-	try (BufferedWriter bw = new BufferedWriter(new FileWriter(fileName))) {
-	    for (int i = 0; i < currentIntermediateTuples.size(); i++) {
-			Tuple t = currentIntermediateTuples.get(i);
-			bw.write(t.key + "|" + t.value + "\n");
-		}
-	} finally {
-	    currentIntermediateTuples.clear();
-	    currentIntermediateSize = 0;
-	}
+    try (BufferedWriter bw = new BufferedWriter(new FileWriter(fileName))) {
+        for (int i = 0; i < currentIntermediateTuples.size(); i++) {
+            Tuple t = currentIntermediateTuples.get(i);
+            bw.write(t.key + "|" + t.value + "\n");
+        }
+    } finally {
+        currentIntermediateTuples.clear();
+        currentIntermediateSize = 0;
+    }
     }
 
     /**
@@ -608,28 +603,28 @@ public class MapReduce {
      * @throws IOException
      */
     private void flushOutput() throws IOException {
-	int myOutputFileNumber = currentOutputFileNumber;
-	currentOutputFileNumber++;
+    int myOutputFileNumber = currentOutputFileNumber;
+    currentOutputFileNumber++;
 
-	String fileName = config.getOutputDir() + File.separator + this.batchKey + "_output" + myOutputFileNumber + ".txt";
-	File out = new File(fileName);
+    String fileName = config.getOutputDir() + File.separator + this.batchKey + "_output" + myOutputFileNumber + ".txt";
+    File out = new File(fileName);
 
-	File tmpFile = File.createTempFile("tempOutput_" + myOutputFileNumber, ".txt", new File(config.getOutputDir()));
-	logger.debug(this.type + ": " + this.name + " | Flush output: " + myOutputFileNumber + ": using temp file: " + tmpFile.getName());
+    File tmpFile = File.createTempFile("tempOutput_" + myOutputFileNumber, ".txt", new File(config.getOutputDir()));
+    logger.debug(this.type + ": " + this.name + " | Flush output: " + myOutputFileNumber + ": using temp file: " + tmpFile.getName());
 
-	try (BufferedWriter bw = new BufferedWriter(new FileWriter(tmpFile))) {
-	    for (int i = 0; i < currentOutputTuples.size(); i++) {
-		Tuple t = currentOutputTuples.get(i);
-		bw.write(t.key + "|" + t.value + "\n");
-	    }
-	} finally {
-	    currentOutputTuples.clear();
-	    currentOutputSize = 0;
-	}
+    try (BufferedWriter bw = new BufferedWriter(new FileWriter(tmpFile))) {
+        for (int i = 0; i < currentOutputTuples.size(); i++) {
+        Tuple t = currentOutputTuples.get(i);
+        bw.write(t.key + "|" + t.value + "\n");
+        }
+    } finally {
+        currentOutputTuples.clear();
+        currentOutputSize = 0;
+    }
 
-	logger.debug(this.type + ": " + this.name + " | Rename temp output " + tmpFile.getName() + " to output: " + fileName);
+    logger.debug(this.type + ": " + this.name + " | Rename temp output " + tmpFile.getName() + " to output: " + fileName);
 
-	java.nio.file.Files.move(tmpFile.toPath(), out.toPath(), StandardCopyOption.ATOMIC_MOVE);
+    java.nio.file.Files.move(tmpFile.toPath(), out.toPath(), StandardCopyOption.ATOMIC_MOVE);
     }
 
     /**
@@ -640,71 +635,71 @@ public class MapReduce {
      * @throws IOException
      */
     public int runPostProcessingPhase() throws IOException {
-	File[] files = new File(config.getOutputDir()).listFiles();
-	logger.info(this.type + ": " + this.name + " | post processing files: " + files.length);
-	for (File f : files) {
-	    logger.trace(this.type + ": " + this.name + " | post processing file: " + f);
+    File[] files = new File(config.getOutputDir()).listFiles();
+    logger.info(this.type + ": " + this.name + " | post processing files: " + files.length);
+    for (File f : files) {
+        logger.trace(this.type + ": " + this.name + " | post processing file: " + f);
 
-	    try (BufferedReader in = new BufferedReader(new FileReader(f))) {
-		String[] allLines = in.lines().toArray(String[]::new);
+        try (BufferedReader in = new BufferedReader(new FileReader(f))) {
+        String[] allLines = in.lines().toArray(String[]::new);
 
-		for (String line : allLines) {
-		    Tuple t = splitLine(line);
-		    if (t == null)
-			continue;
+        for (String line : allLines) {
+            Tuple t = splitLine(line);
+            if (t == null)
+            continue;
 
-		    String old = postProcessingMap.get(t.key);
-		    if (old == null) {
-			postProcessingMap.put(t.key, t.value);
-		    } else {
-			userApplication.postProcess(t.key, old, t.value);
-		    }
-		}
-	    }
-	}
+            String old = postProcessingMap.get(t.key);
+            if (old == null) {
+            postProcessingMap.put(t.key, t.value);
+            } else {
+            userApplication.postProcess(t.key, old, t.value);
+            }
+        }
+        }
+    }
 
-	String fileName = config.getOutputDir() + File.separator + "final-output.txt";
-	File out = new File(fileName);
+    String fileName = config.getOutputDir() + File.separator + "final-output.txt";
+    File out = new File(fileName);
 
-	File tmpFile = File.createTempFile("finalOutput_", ".txt", new File(config.getOutputDir()));
-	logger.debug(this.type + ": " + this.name + " | writing final output");
+    File tmpFile = File.createTempFile("finalOutput_", ".txt", new File(config.getOutputDir()));
+    logger.debug(this.type + ": " + this.name + " | writing final output");
 
-	try (BufferedWriter bw = new BufferedWriter(new FileWriter(tmpFile))) {
-	    for (String key : postProcessingMap.keySet()) {
-		bw.write(key + "|" + postProcessingMap.get(key) + "\n");
-	    }
-	}
+    try (BufferedWriter bw = new BufferedWriter(new FileWriter(tmpFile))) {
+        for (String key : postProcessingMap.keySet()) {
+        bw.write(key + "|" + postProcessingMap.get(key) + "\n");
+        }
+    }
 
-	logger.info(this.type + ": " + this.name + " | Rename temp output " + tmpFile.getName() + " to output: " + fileName);
-	java.nio.file.Files.move(tmpFile.toPath(), out.toPath(), StandardCopyOption.ATOMIC_MOVE);
-	return files.length;
+    logger.info(this.type + ": " + this.name + " | Rename temp output " + tmpFile.getName() + " to output: " + fileName);
+    java.nio.file.Files.move(tmpFile.toPath(), out.toPath(), StandardCopyOption.ATOMIC_MOVE);
+    return files.length;
     }
 
     /**
      * A helper class that wraps a key/value-pair in a tuple
      */
     public final static class Tuple implements Comparable<Tuple> {
-	final String key;
-	final String value;
+    final String key;
+    final String value;
 
-	public Tuple(String key, String value) {
-	    this.key = key;
-	    this.value = value;
-	}
+    public Tuple(String key, String value) {
+        this.key = key;
+        this.value = value;
+    }
 
-	@Override
-	public int compareTo(Tuple o) {
-	    return key.compareTo(o.key);
-	}
+    @Override
+    public int compareTo(Tuple o) {
+        return key.compareTo(o.key);
+    }
 
-	@Override
-	public int hashCode() {
-	    return key.hashCode();
-	}
+    @Override
+    public int hashCode() {
+        return key.hashCode();
+    }
 
-	@Override
-	public boolean equals(Object obj) {
-	    return key.equals(obj);
-	}
+    @Override
+    public boolean equals(Object obj) {
+        return key.equals(obj);
+    }
     }
 }
