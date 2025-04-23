@@ -3,6 +3,12 @@ package ds.pa2;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+/* For Infini Band
+import java.net.Inet4Address;
+import java.util.Enumeration;
+import java.net.NetworkInterface;
+import java.net.SocketException;
+ */
 
 public final class Util {
 	private static ArrayList<String> nodeList = internalGetHostnames();
@@ -96,8 +102,18 @@ public final class Util {
 		String result = null;
 		try {
 			result = InetAddress.getLocalHost().getHostAddress();
+		/*  For Infini Band
+			Enumeration<InetAddress> addresses = NetworkInterface.getByName("ib0").getInetAddresses();
+			while (addresses.hasMoreElements()){
+				InetAddress address = addresses.nextElement();
+				if (address instanceof Inet4Address){
+					result = address.getHostAddress();
+				}
+			}
+		} catch (SocketException e) { */
 		} catch (UnknownHostException e) {
 			System.err.println("Error while getting my own IP address: " + e);
+			e.printStackTrace();
 			System.exit(1);
 		}
 		return result;

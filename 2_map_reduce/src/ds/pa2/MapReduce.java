@@ -100,6 +100,12 @@ public class MapReduce {
         MapReduce mr = new MapReduce();
 	    userApplication.configure(mr, args);
 
+        /*  Use Infini Band
+        String rmiServerHostname = "java.rmi.server.hostname";
+        System.setProperty(rmiServerHostname, Util.getMyIP());
+        logger.info(mr.type + ": " + mr.name + " | " + rmiServerHostname + System.getProperty(rmiServerHostname));
+        */
+
         stubImpl = new StubImpl();
         Registry reg = LocateRegistry.createRegistry(1099);
         StubInterface stub = (StubInterface) UnicastRemoteObject.exportObject(stubImpl, 1099);
