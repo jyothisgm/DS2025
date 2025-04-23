@@ -1,6 +1,6 @@
 #!/bin/bash
 
-for size in 2 4 8 12 16
+for size in $(seq 2 16)
 do
   rm -rf /var/scratch/$USER/intermediate /var/scratch/$USER/output
   mkdir -p /var/scratch/$USER/intermediate
@@ -9,7 +9,8 @@ do
   srun -N $size -t 15 ./run.sh WordCount > out.WordCount.$size 2> err.WordCount.$size
 done
 
-for size in 2 4 8 12 16
+# for size in 2 4 8 12 16
+for size in $(seq 2 16)
 do
   rm -rf /var/scratch/$USER/intermediate /var/scratch/$USER/output
   mkdir -p /var/scratch/$USER/intermediate
@@ -18,7 +19,8 @@ do
   srun -N $size -t 15 ./run.sh WordCountCombiner > out.WordCountCombiner.$size 2> err.WordCountCombiner.$size
 done
 
-for size in 2 4 8 12 16
+# for size in 2 4 8 12 16
+for size in $(seq 2 16)
 do
   rm -rf /var/scratch/$USER/intermediate /var/scratch/$USER/output
   mkdir -p /var/scratch/$USER/intermediate
