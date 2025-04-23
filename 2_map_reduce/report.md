@@ -44,7 +44,8 @@ The cordinator keeps track of the tasks to be done in a queue and returns lists 
 
 Additional Features
 -------------------
-- Explain any additional optional features you implemented.
+- WordCount combiner funtion
+In the WordCount application each individual word is mapped to a "1" value. This will cause a huge amount of word-value pairs for frequent words which could instead be mapped all together to increase the amout of words contained in the intermediate files. We expected this to reduce the operation time of the reduce phase as the total number of intermediate files would be reduces because of the "compression" caused "pre-reducing" the intermediate files. With this in mind we used a hashmap to keep track of the word-count instead of an arraylist of tuples which was used in the given implementation. We flush the intermediate files in the same manner, but counting number of keys-value pairs in the hashmap instead of tuples per file. 
 
 - InfiniBand
 We also wanted to test speedup for the application when using InfiniBand instead of Ethernet. For this the infiniband IPs for the nodes were used for registry stub binding and communication. We achieved this by changing the getIP function in Utils so it can be applied across nodes. Eventhough we expected some speedup it was negligible because the communication overhead for Map Reduce is significantly less than the time taken for compute and network file read. We were not able to use infiniband for file read because the NFS was only mounted over Ethernet, and beyond the scope of the current work. We were able to reproduce the performance difference for Assignment 1, which resulted in 6 times lower latency.
@@ -52,20 +53,40 @@ We also wanted to test speedup for the application when using InfiniBand instead
 
 Results
 -------
-- Show the scalability plot for 1 to 15 clients, for BOTH applications. you can use the run-all.sh script to run your code with different numbers of clients.
+<!-- - Show the scalability plot for 1 to 15 clients, for BOTH applications. you can use the run-all.sh script to run your code with different numbers of clients. -->
 
-- Explain the behaviour you observe.
+The scalability plot for the MapReduce applications can be seen in the figure below:
 
-- How does the framework scale? 
+![Time Scaling](time.png)
 
-- What are the bottlenecks?
+We plot the total time taken by each phase and the total time as measured by the coordinator node in logarithmic scale and use the same color for each application phase and change the linetype per application. The postprocessing phase, which took approximately 9 seconds on the coordinator, was not affected by scaling since it was not assigned to more node and thus became the main bottleneck so we completely discarded it in the plots. The total time plotted also does not contain the postprocessing time. 
 
-- Did you have to compromise on performance when implementing fault-tolerance?
+It is clearly visible that in InvertedIndex the reduction time is significantly less than map time whereas the oposite happend in WordCount. We do not consider this an important part of the experiment since it is affected by the nature of the application. What we note instead is that all times scale down when increasing the amount of worker nodes.
 
+To better understand the scaling behavior we also plotted the speedup of the total time of each application compared to linear speedup. We also included the data using a combiner function for WordCount.
+
+![Scaling](speedup.png)
+
+In this plot we notice that all applications scale almost linearly but with a smaller factor than theoretical linear speedup (denoted in dashed lines for each application). We estimate that this is caused by the idle client time in the absense of work in the queues which is caused by our compromise to wait for all tasks to be finished before each phase is completed for fault tolerance. This difference could be reduced by allowing workers to take tasks from the next phase but we considered this to be beyond the scope of this assignment.
+
+<!-- - Explain the behaviour you observe. -->
+
+<!-- - How does the framework scale?  -->
+
+<!-- - What are the bottlenecks? -->
+
+<!-- - Did you have to compromise on performance when implementing fault-tolerance? -->
+
+- Combiner functions:
+Our approach reduced the number of intermediate files by a factor of 4 original value of 322 to 66. This also led to a corresponding improvement in reduction time which can be seen in the image below:
+
+![Combiner function](combiner.png)
+
+There is clear improvement in reduction time(orange) by a factor of about 4 regardless of scaling across more nodes. This is to be expected since the amount of jobs is still balanced across nodes. We expect this to cause an issue only if the total amount of resulting files were less than the number of nodes. Finally note that there is almost no overhead added to the map function by the addition of the hashmap.
 
 Acknowledgements for any collaboration or outside help received
 ---------------------------------------------------------------
-If applicable...
+Not applicable...
 
 
 What does not work in your implementation
