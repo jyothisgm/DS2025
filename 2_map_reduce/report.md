@@ -21,7 +21,7 @@ One or two paragraphs per question below is fine.
 
 - Explain who did what for this assignment.
 
-Jo did the RMI implementation and the map phase in a distributed manner with queues and the coordinator hearbeats as well as node failute logic. Thanos did the logs, implemented the combiner logic with hashmaps, as well as the reduce phase. Both of us worked on the plots.
+Jo did the RMI implementation and the map phase in a distributed manner with queues and the coordinator hearbeats as well as node failute logic. Thanos did the logs, implemented the combiner logic with hashmaps, as well as the reduce phase and infiniband. Both of us worked on the plots.
 
 - Explain the design and implementation decisions you made to parallelize the code.
 
