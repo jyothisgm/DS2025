@@ -46,6 +46,9 @@ Additional Features
 -------------------
 - Explain any additional optional features you implemented.
 
+- InfiniBand
+We also wanted to test speedup for the application when using InfiniBand instead of Ethernet. For this the infiniband IPs for the nodes were used for registry stub binding and communication. We achieved this by changing the getIP function in Utils so it can be applied across nodes. Eventhough we expected some speedup it was negligible because the communication overhead for Map Reduce is significantly less than the time taken for compute and network file read. We were not able to use infiniband for file read because the NFS was only mounted over Ethernet, and beyond the scope of the current work. We were able to reproduce the performance difference for Assignment 1, which resulted in 6 times lower latency.
+
 
 Results
 -------
