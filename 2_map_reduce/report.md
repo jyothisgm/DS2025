@@ -48,7 +48,14 @@ Additional Features
 In the WordCount application each individual word is mapped to a "1" value. This will cause a huge amount of word-value pairs for frequent words which could instead be mapped all together to increase the amout of words contained in the intermediate files. We expected this to reduce the operation time of the reduce phase as the total number of intermediate files would be reduces because of the "compression" caused "pre-reducing" the intermediate files. With this in mind we used a hashmap to keep track of the word-count instead of an arraylist of tuples which was used in the given implementation. We flush the intermediate files in the same manner, but counting number of keys-value pairs in the hashmap instead of tuples per file. 
 
 - InfiniBand
-We also wanted to test speedup for the application when using InfiniBand instead of Ethernet. For this the infiniband IPs for the nodes were used for registry stub binding and communication. We achieved this by changing the getIP function in Utils so it can be applied across nodes. Eventhough we expected some speedup it was negligible because the communication overhead for Map Reduce is significantly less than the time taken for compute and network file read. We were not able to use infiniband for file read because the NFS was only mounted over Ethernet, and beyond the scope of the current work. We were able to reproduce the performance difference for Assignment 1, which resulted in 6 times lower latency.
+We also wanted to test speedup for the application when using InfiniBand instead of Ethernet. For this the infiniband IPs for the nodes were used for registry stub binding and communication. We achieved this by changing the getIP function in Utils so it can be applied across nodes. Eventhough we expected some speedup it was negligible because the communication overhead for Map Reduce is significantly less than the time taken for compute and network file read. We were not able to use infiniband for file read because the NFS was only mounted over Ethernet, and beyond the scope of the current work. 
+
+![infiniband scaling](infiniband.png)
+
+We were able to reproduce the performance difference for Assignment 1, which resulted in about 4 times lower latency. This speedup can be seen in the figure below:
+
+![infiniband](iblatency.png)
+
 
 
 Results
