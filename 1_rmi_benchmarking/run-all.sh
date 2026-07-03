@@ -1,12 +1,13 @@
 #!/bin/bash
+module load java/jdk-11
 
 sequenceNumberCalls=100000
-reps=5
+reps=10
 sh build.sh
 rm -f out.* err.*
 
-
 for n in $(seq 1 $reps)
+    echo === $n ===
 do
   for size in $(seq 2 11)
   do
@@ -17,10 +18,15 @@ do
   # set header
   if [ $n -eq 1 ]
   then
-    cat out.* | grep Clients | head -n 1 > results_ib.csv
+    cat out.* | grep Clients | head -n 1 > results.csv
   fi
   # gather results to file
-  sh ib_gather.sh
+  sh gather.sh
   # cleanup
-  rm -f out.* err.*
+  rm out.* err.*
 done
+
+sed -i -e 's/Array/Vector/g' -e 's/Complex/Hashmap/g'  results.csv 
+sed -i -e 's/Array/Vector/g' -e 's/Complex/Hashmap/g'  results_ib.csv 
+
+cp results*.csv ../../rrmi
