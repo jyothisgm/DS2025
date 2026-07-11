@@ -19,6 +19,8 @@ import org.slf4j.LoggerFactory;
 public class Client {
 	static final int ARRAY_LEN = 200000; // size of double arrays for the optional bonus assignment
 	static final int HASH_MAP_LEN = 100000; // size of the HashMaps sent to the server for the optional bonus
+    static final int NUM_ARRAYS = 10;
+    static final int NUM_HASH = 10;
 												// assignment
 
 	static final Logger logger = LoggerFactory.getLogger(Client.class);
@@ -92,13 +94,8 @@ public class Client {
 
 		logger.info("Barrier open at " + start + ": Client on host " + Util.getMyHostname());
 		int sequenceNumber = 0;
-		// for (int i = 0; i < 100000; i++) { // LOCAL TESTING
 		for (int i = 0; i < ClientServer.getNrSequenceNumberCalls(); i++) {
 			sequenceNumber = serverInterface.getSequenceNumber();
-			// if (i % 1000 == 0) {
-			// 	logger.debug("Checkpoint Sequence Number " + sequenceNumber + " recieved. Client on host "
-			// 			+ Util.getMyHostname());
-			// }
 		}
 		long end = System.nanoTime();
 
@@ -115,7 +112,9 @@ public class Client {
 		start = System.nanoTime();
 		logger.info("Barrier open for Large array at " + start + ": Client on host " + Util.getMyHostname());
 
+		for (int i = 0; i < NUM_ARRAYS ; i++) {
 		serverInterface.sendLargeArray(arr);
+        }
 
 		end = System.nanoTime();
 		logger.info("Large array sent at " + end + ": Client on host " + Util.getMyHostname());
@@ -131,7 +130,9 @@ public class Client {
 		start = System.nanoTime();
 		logger.info("Barrier open for Complex Object at " + start + ": Client on host " + Util.getMyHostname());
 
+		for (int i = 0; i < NUM_HASH ; i++) {
 		serverInterface.sendComplexObject(result);
+        }
 
 		end = System.nanoTime();
 		logger.info("Complex Object sent at " + end + ": Client on host " + Util.getMyHostname());
