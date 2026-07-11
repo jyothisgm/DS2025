@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
  */
 public class Server {
 	static final Logger logger = LoggerFactory.getLogger(Server.class);
-	static final int ARRAY_SIZE = 1024 * 1024; // size of double arrays for the optional bonus assignment
+	static final int ARRAY_LEN = 200000; // size of double arrays for the optional bonus assignment
 
 	private String nrClientsString() {
 		int nrClients = Util.getNrClients();
@@ -71,11 +71,12 @@ public class Server {
 			// Recieve Large Array
 			while (serverImpl.getClientsDone() < Util.getNrClients() * 2) {
 				Thread.sleep(5000);
-			}
-
+            }
 			aggregatedTime = serverImpl.getAggregatedArray() / 1000.0;
+			microsPerCall = aggregatedTime / totalCalls;
 			latency = aggregatedTime / 2;
-			throughput = Double.SIZE * 1024 * 1024 * 1_000_000.0 / aggregatedTime;
+			throughput = Double.SIZE * ARRAY_LEN * 1_000_000.0 / aggregatedTime;
+            totalCalls = Util.getNrClients();
 			System.out.printf("Time for Large Array transfer with %s = %.3f microseconds\n",
 					nrClientsString(), microsPerCall);
 			logger.info(String.format("Time for Large Array transfer with %s = %.3f microseconds\n",
@@ -93,7 +94,7 @@ public class Server {
 
 			System.out.println("NClients,Type,TotalCalls,Time,MicrosPerCall,Latency,Throughput");
 			System.out.printf("%s,%s,%d,%.5f,%.5f,%.5f,%.5f\n",
-					Util.getNrClients(), "Array", 1, aggregatedTime, microsPerCall, latency, throughput);
+					Util.getNrClients(), "Array", totalCalls, aggregatedTime, microsPerCall, latency, throughput);
 
 			while (serverImpl.getClientsDone() < Util.getNrClients() * 3) {
 				Thread.sleep(5000);
@@ -101,8 +102,11 @@ public class Server {
 
 			// Recieve Complex Object
 			aggregatedTime = serverImpl.getAggregatedTimeHash() / 1000.0;
+			microsPerCall = aggregatedTime / totalCalls;
 			latency = aggregatedTime / 2;
 			throughput = serverImpl.getObjectSize() * 8 * 1_000_000.0 / aggregatedTime; // Convert to bits
+            totalCalls = Util.getNrClients();
+
 			System.out.printf("Time for Complex Object transfer with %s = %.3f microseconds\n",
 					nrClientsString(), microsPerCall);
 			logger.info(String.format("Time for Complex Object transfer with %s = %.3f microseconds\n",

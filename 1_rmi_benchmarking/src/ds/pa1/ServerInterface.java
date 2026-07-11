@@ -58,7 +58,7 @@ public interface ServerInterface extends Remote {
 	 * @param data A large 2 dimensional array of doubles
 	 *
 	 */
-	public void sendLargeArray(double[][] arr) throws RemoteException;
+	public void sendLargeArray(double[] arr) throws RemoteException;
 
 	/**
 	 * Recieve a HashMap.

@@ -58,7 +58,7 @@ public class ServerImplementation implements ServerInterface {
 	 * @param data A large 2 dimensional array of doubles
 	 *
 	 */
-	public void sendLargeArray(double[][] data) throws RemoteException {
+	public void sendLargeArray(double[] data) throws RemoteException {
 		logger.info("Received large array of size: " + data.length + "x" + (data.length > 0 ? data[0].length : 0));
 	}
 
@@ -98,7 +98,7 @@ public class ServerImplementation implements ServerInterface {
 	 *
 	 * @param nanosSequenceNumbers The total time (in nanoseconds) spent in the
 	 *                             getSequenceNumber calls.
-	 * @param nanosSequenceNumbers The total size of the complex object
+	 * @param size The total size of the complex object
 	 */
 	@Override
 	public synchronized void setDoneHash(long nanosSequenceNumners, long size) {
