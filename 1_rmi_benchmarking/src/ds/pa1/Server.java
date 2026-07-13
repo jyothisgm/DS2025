@@ -50,8 +50,8 @@ public class Server {
 			// long totalCalls = Util.getNrClients() * 100000; // LOCAL TESTING
 			double microsPerCall = aggregatedTime / totalCalls;
 			double latency = microsPerCall / 2;
-			double num_size = Integer.SIZE;
-			double throughput = num_size * 1_000_000.0 / microsPerCall;
+			double num_avg_size_bits = Integer.SIZE;
+			double throughput = totalCalls * num_avg_size_bits * 1_000_000.0 / aggregatedTime;
 			System.out.printf("Time per getSequenceNumber call with %s and %d calls = %.3f microseconds\n",
 					nrClientsString(), totalCalls, microsPerCall);
 			logger.info(String.format("Time per getSequenceNumber call with %s and %d calls = %.3f microseconds",
@@ -68,9 +68,9 @@ public class Server {
 					nrClientsString(), totalCalls, throughput));
 
 			System.out.println("NClients,Type,TotalCalls,Time,MicrosPerCall,Latency,Throughput,Size");
-			System.out.printf("%s,%s,%d,%.5f,%.5f,%.5f,%.5f,%.1f\n",
+			System.out.printf("%s,%s,%d,%.5f,%.5f,%.5f,%.5f,%.0f\n",
 					Util.getNrClients(), "Sequence", totalCalls, aggregatedTime, microsPerCall, latency, throughput,
-					num_size);
+					num_avg_size_bits/8);
 
 			// Recieve Large Array
 			while (serverImpl.getClientsDone() < Util.getNrClients() * 2) {
@@ -79,9 +79,10 @@ public class Server {
 			aggregatedTime = serverImpl.getAggregatedArray() / 1000.0;
 			totalCalls = Util.getNrClients() * NUM_ARRAYS;
 			microsPerCall = aggregatedTime / totalCalls;
-			latency = aggregatedTime / 2;
-			double arr_size = Double.SIZE * ARRAY_LEN; // .Size already in bits
-			throughput = arr_size * 1_000_000.0 / aggregatedTime;
+			latency = microsPerCall / 2;
+			double arr_avg_size_bits = Double.SIZE * ARRAY_LEN ; // .SIZE already in bits
+			throughput = totalCalls * arr_avg_size_bits * 1_000_000.0 / aggregatedTime;
+
 			System.out.printf("Time for Large Array transfer with %s = %.3f microseconds\n",
 					nrClientsString(), microsPerCall);
 			logger.info(String.format("Time for Large Array transfer with %s = %.3f microseconds\n",
@@ -98,9 +99,9 @@ public class Server {
 					nrClientsString(), throughput));
 
 			System.out.println("NClients,Type,TotalCalls,Time,MicrosPerCall,Latency,Throughput,Size");
-			System.out.printf("%s,%s,%d,%.5f,%.5f,%.5f,%.5f,%f.1fn",
+			System.out.printf("%s,%s,%d,%.5f,%.5f,%.5f,%.5f,%.0f\n",
 					Util.getNrClients(), "Vector", totalCalls, aggregatedTime, microsPerCall, latency, throughput,
-					arr_size);
+					arr_avg_size_bits/8);
 
 			while (serverImpl.getClientsDone() < Util.getNrClients() * 3) {
 				Thread.sleep(5000);
@@ -110,9 +111,10 @@ public class Server {
 			aggregatedTime = serverImpl.getAggregatedTimeHash() / 1000.0;
 			totalCalls = Util.getNrClients() * NUM_HASH;
 			microsPerCall = aggregatedTime / totalCalls;
-			latency = aggregatedTime / 2;
-			double hash_size = serverImpl.getObjectSize() * 8; // bytes to bits
-			throughput = hash_size * 1_000_000.0 / aggregatedTime;
+			latency = microsPerCall / 2;
+			double hash_size_bits = serverImpl.getObjectSize() * 8 ; // bytes to bits
+			double hash_avg_size_bits = hash_size_bits/totalCalls;
+			throughput = hash_size_bits * 1_000_000.0 / aggregatedTime;
 
 			System.out.printf("Time for Complex Object transfer with %s = %.3f microseconds\n",
 					nrClientsString(), microsPerCall);
@@ -130,9 +132,9 @@ public class Server {
 					nrClientsString(), throughput));
 
 			System.out.println("NClients,Type,TotalCalls,Time,MicrosPerCall,Latency,Throughput,Size");
-			System.out.printf("%s,%s,%d,%.5f,%.5f,%.5f,%.5f,%.1f\n",
+			System.out.printf("%s,%s,%d,%.5f,%.5f,%.5f,%.5f,%.0f\n",
 					Util.getNrClients(), "Complex", totalCalls, aggregatedTime, microsPerCall, latency, throughput,
-					hash_size);
+					hash_avg_size_bits/8);
 
 			System.exit(0);
 		} catch (Exception e) {

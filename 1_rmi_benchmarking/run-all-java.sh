@@ -5,6 +5,7 @@ sequenceNumberCalls=100000
 reps=10
 sh build.sh
 rm -f out.* err.*
+rm results.csv
 
 for n in $(seq 1 $reps)
 do
@@ -12,8 +13,9 @@ do
   for size in $(seq 2 11)
   do
     echo running size $size
-    srun -N $size run.sh $sequenceNumberCalls > out.$size 2> err.$size
+    srun -N $size run_java.sh $sequenceNumberCalls > out.$size 2> err.$size &
   done
+  wait
 
   # set header
   if [ $n -eq 1 ]
@@ -24,9 +26,13 @@ do
   sh gather.sh
   # cleanup
   rm out.* err.*
+
 done
 
 sed -i -e 's/Array/Vector/g' -e 's/Complex/Hashmap/g'  results.csv 
 sed -i -e 's/Array/Vector/g' -e 's/Complex/Hashmap/g'  results_ib.csv 
+
+mv results.csv results_java.csv
+mv results_ib.csv results_java_ib.csv
 
 cp results*.csv ../../rrmi
