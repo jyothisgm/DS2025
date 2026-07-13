@@ -17,8 +17,10 @@ import org.slf4j.LoggerFactory;
  * TODO: You have to modify and extend this file.
  */
 public class Client {
-	static final int ARRAY_SIZE = 1024 * 1024; // size of double arrays for the optional bonus assignment
-	static final int HASH_MAP_SIZE = 100000; // size of the HashMaps sent to the server for the optional bonus
+	static final int ARRAY_LEN = 200000; // size of double arrays for the optional bonus assignment
+	static final int HASH_MAP_LEN = 100000; // size of the HashMaps sent to the server for the optional bonus
+    static final int NUM_ARRAYS = 10;
+    static final int NUM_HASH = 10;
 												// assignment
 
 	static final Logger logger = LoggerFactory.getLogger(Client.class);
@@ -27,12 +29,12 @@ public class Client {
 	 * Utility function to create a HashMap. It can be used for the optional bonus
 	 * assigment.
 	 * 
-	 * @return A new HashMap with HASH_MAP_SIZE (key, value) pairs.
+	 * @return A new HashMap with HASH_MAP_LEN (key, value) pairs.
 	 */
 	private HashMap<String, String> createHashMap() {
 		HashMap<String, String> result = new HashMap<String, String>();
 
-		for (int i = 0; i < HASH_MAP_SIZE; i++) {
+		for (int i = 0; i < HASH_MAP_LEN; i++) {
 			result.put("" + i, String.format("%.10f", Math.random()));
 		}
 
@@ -44,7 +46,7 @@ public class Client {
 	 * the optional bonus assignment, to compute the throughput achieve when
 	 * transferring complex data to an rmi server.
 	 * 
-	 * @return A new HashMap with HASH_MAP_SIZE (key, value) pairs.
+	 * @return A new HashMap with HASH_MAP_LEN (key, value) pairs.
 	 */
 	private long getHashMapSize(HashMap<String, String> h) {
 		int size = 0;
@@ -92,13 +94,8 @@ public class Client {
 
 		logger.info("Barrier open at " + start + ": Client on host " + Util.getMyHostname());
 		int sequenceNumber = 0;
-		// for (int i = 0; i < 100000; i++) { // LOCAL TESTING
 		for (int i = 0; i < ClientServer.getNrSequenceNumberCalls(); i++) {
 			sequenceNumber = serverInterface.getSequenceNumber();
-			if (i % 1000 == 0) {
-				logger.debug("Checkpoint Sequence Number " + sequenceNumber + " recieved. Client on host "
-						+ Util.getMyHostname());
-			}
 		}
 		long end = System.nanoTime();
 
@@ -109,13 +106,15 @@ public class Client {
 		logger.info("Client " + Util.getMyHostname() + " done in " + (end - start) + " nanosecond(s)");
 
 		// Send Double Array to Server
-		double [][]arr = new double[1000][1000];
+		double []arr = new double[ARRAY_LEN];
 		serverInterface.barrier();
 
 		start = System.nanoTime();
 		logger.info("Barrier open for Large array at " + start + ": Client on host " + Util.getMyHostname());
 
+		for (int i = 0; i < NUM_ARRAYS ; i++) {
 		serverInterface.sendLargeArray(arr);
+        }
 
 		end = System.nanoTime();
 		logger.info("Large array sent at " + end + ": Client on host " + Util.getMyHostname());
@@ -131,7 +130,9 @@ public class Client {
 		start = System.nanoTime();
 		logger.info("Barrier open for Complex Object at " + start + ": Client on host " + Util.getMyHostname());
 
+		for (int i = 0; i < NUM_HASH ; i++) {
 		serverInterface.sendComplexObject(result);
+        }
 
 		end = System.nanoTime();
 		logger.info("Complex Object sent at " + end + ": Client on host " + Util.getMyHostname());
