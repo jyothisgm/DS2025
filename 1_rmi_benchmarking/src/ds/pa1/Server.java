@@ -68,7 +68,7 @@ public class Server {
 					nrClientsString(), totalCalls, throughput));
 
 			System.out.println("NClients,Type,TotalCalls,Time,MicrosPerCall,Latency,Throughput,Size");
-			System.out.printf("%s,%s,%d,%.5f,%.5f,%.5f,%.5f\n",
+			System.out.printf("%s,%s,%d,%.5f,%.5f,%.5f,%.5f,%.1f\n",
 					Util.getNrClients(), "Sequence", totalCalls, aggregatedTime, microsPerCall, latency, throughput,
 					num_size);
 
@@ -98,7 +98,7 @@ public class Server {
 					nrClientsString(), throughput));
 
 			System.out.println("NClients,Type,TotalCalls,Time,MicrosPerCall,Latency,Throughput,Size");
-			System.out.printf("%s,%s,%d,%.5f,%.5f,%.5f,%.5f\n",
+			System.out.printf("%s,%s,%d,%.5f,%.5f,%.5f,%.5f,%f.1fn",
 					Util.getNrClients(), "Vector", totalCalls, aggregatedTime, microsPerCall, latency, throughput,
 					arr_size);
 
@@ -130,7 +130,7 @@ public class Server {
 					nrClientsString(), throughput));
 
 			System.out.println("NClients,Type,TotalCalls,Time,MicrosPerCall,Latency,Throughput,Size");
-			System.out.printf("%s,%s,%d,%.5f,%.5f,%.5f,%.5f\n",
+			System.out.printf("%s,%s,%d,%.5f,%.5f,%.5f,%.5f,%.1f\n",
 					Util.getNrClients(), "Complex", totalCalls, aggregatedTime, microsPerCall, latency, throughput,
 					hash_size);
 
