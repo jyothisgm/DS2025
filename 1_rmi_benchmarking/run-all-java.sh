@@ -1,7 +1,7 @@
 #!/bin/bash
 module load java/jdk-11
 
-sequenceNumberCalls=100000
+sequenceNumberCalls=10000
 reps=10
 sh build.sh
 rm -f out.* err.*
