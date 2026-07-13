@@ -77,10 +77,10 @@ public class Server {
 				Thread.sleep(5000);
 			}
 			aggregatedTime = serverImpl.getAggregatedArray() / 1000.0;
-			totalCalls = Util.getNrClients() * NUM_VEC;
+			totalCalls = Util.getNrClients() * NUM_ARRAYS;
 			microsPerCall = aggregatedTime / totalCalls;
 			latency = aggregatedTime / 2;
-			double arr_size = Double.Size * ARRAY_LEN; // .Size already in bits
+			double arr_size = Double.SIZE * ARRAY_LEN; // .Size already in bits
 			throughput = arr_size * 1_000_000.0 / aggregatedTime;
 			System.out.printf("Time for Large Array transfer with %s = %.3f microseconds\n",
 					nrClientsString(), microsPerCall);

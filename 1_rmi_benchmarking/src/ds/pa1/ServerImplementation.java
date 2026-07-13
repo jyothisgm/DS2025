@@ -59,7 +59,7 @@ public class ServerImplementation implements ServerInterface {
 	 *
 	 */
 	public void sendLargeArray(double[] data) throws RemoteException {
-		logger.info("Received large array of size: " + data.length + "x" + (data.length > 0 ? data[0].length : 0));
+		logger.info("Received large array of size: " + data.length);
 	}
 
 	/**

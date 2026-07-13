@@ -7,8 +7,8 @@ sh build.sh
 rm -f out.* err.*
 
 for n in $(seq 1 $reps)
-    echo === $n ===
 do
+  echo === $n ===
   for size in $(seq 2 11)
   do
     echo running size $size
