@@ -53,7 +53,7 @@ public class Client {
 		for (String k : h.keySet()) {
 			size += k.length() + h.get(k).length();
 		}
-		size *= 2; // characters are two bytes in Java
+		// size *= 2; // characters are two bytes in Java BUT WHEN THE If a character c is in the range \u0001 through \u007f, it is represented by one byte
 		return size;
 	}
 
